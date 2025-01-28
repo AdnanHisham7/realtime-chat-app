@@ -8,6 +8,7 @@ export default {
     extend: {
       fontSize: {
         'xxs': '0.625rem', // 10px
+        '3xs': '0.525rem',
       },
       colors: {
         customGreen: {

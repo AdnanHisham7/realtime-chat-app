@@ -53,6 +53,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+//!User Login
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -92,9 +93,26 @@ const loginUser = async (req, res) => {
   }
 };
 
+//! finding an existing user by id
+const findUser = async (req, res) => {
+  const userId = req.params.userId;
+  try {
+    const user = await User.findById(userId);
+
+    // Check if user exists
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error finding user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//! Fetch all users from the database 
 const getUsers = async (req, res) => {
   try {
-    // Fetch all users from the database
     const users = await User.find({}, "-password");
     res.status(200).json(users);
   } catch (error) {
@@ -103,5 +121,4 @@ const getUsers = async (req, res) => {
   }
 };
 
-
-module.exports = { registerUser, loginUser, getUsers };
+module.exports = { registerUser, loginUser, findUser, getUsers };

@@ -25,8 +25,6 @@ export const AuthProvider = ({ children }) => {
     });
     
 
-    console.log('loginData', loginData)
-
     useEffect(() => {
         const user = localStorage.getItem("user")
         setUser(JSON.parse(user))
@@ -40,7 +38,6 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const updateLoginData = useCallback((data) => {
-        console.log("Updating login data:", data);
         setLoginData((prevData) => ({
             ...prevData,
             ...data,
@@ -80,7 +77,6 @@ export const AuthProvider = ({ children }) => {
     
             try {
                 setIsLoginLoading(true);
-                console.log("Logging in with:", loginData); // Logging for debugging
     
                 const response = await axios.post(`${baseUrl}/users/login`, loginData); // Use loginData
                 localStorage.setItem("user", JSON.stringify(response.data));
@@ -104,7 +100,6 @@ export const AuthProvider = ({ children }) => {
     
 
     const logoutUser = useCallback(() => {
-        console.log("am i deleting")
         localStorage.removeItem("user")
         setUser(null)
     }, [])
