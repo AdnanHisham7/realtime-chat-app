@@ -1,10 +1,19 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
 import { useFetchRecipientUser } from '../hooks/useFetchRecipient'
+import { ChatContext } from '../context/ChatContext';
 
 const UserChat = ({ chat, user }) => {
   const { recipientUser } = useFetchRecipientUser(chat, user);
+
+  const { onlineUsers } = useContext(ChatContext);
+
+  // Check if the recipient is online.
+  const isOnline = onlineUsers?.some(
+    (onlineUser) => onlineUser?.userId === recipientUser?._id
+  );
+
 
   return (
     <div>
@@ -15,19 +24,28 @@ const UserChat = ({ chat, user }) => {
         {/* Profile and Chat Info */}
         <div className="flex items-center space-x-3 w-full">
           {/* Profile Image */}
-          <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden shrink-0">
-            {recipientUser?.profile ? (
-              <img
-                src={recipientUser?.profile}
-                alt={`${recipientUser?.name} profile`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <FontAwesomeIcon
-                icon={faUserCircle}
-                className="w-full h-full text-gray-400"
-              />
-            )}
+          <div className="relative w-10 h-10 bg-gray-300 rounded-full">
+
+            <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden shrink-0">
+              {recipientUser?.profile ? (
+                <img
+                  src={recipientUser?.profile}
+                  alt={`${recipientUser?.name} profile`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <FontAwesomeIcon
+                  icon={faUserCircle}
+                  className="w-full h-full text-gray-400"
+                />
+              )}
+            </div>
+            <span
+              className={`absolute bottom-0 right-0 transform translate-x-1/4 translate-y-1/4 w-3.5 h-3.5 rounded-full ${isOnline
+                ? "bg-green-500"
+                : "bg-gray-500"
+                } border-2 border-white`}
+            ></span>
           </div>
 
           {/* Name and Last Message */}

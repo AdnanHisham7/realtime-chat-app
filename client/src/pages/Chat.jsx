@@ -55,7 +55,7 @@ const Chat = () => {
       {/* Chats List Section */}
       <div
         className={`w-full lg:w-1/3 lg:my-8 lg:ml-10 lg:mr-4 min-w-[300px] flex flex-col transition-transform duration-300 ${isChatBoxVisible ? "hidden lg:flex" : ""
-        }`}
+          }`}
       >
         <div className={`${isDiscoverChatsVisible ? "hidden" : ""} w-full mx-auto rounded-lg border bg-white h-full flex flex-col`}>
           {/* Header */}
@@ -94,10 +94,14 @@ const Chat = () => {
             )}
           </div>
         </div>
-      {/* Discover Chats Section */}
-      {isDiscoverChatsVisible && (
-        <DiscoverChats handleCancel={handleDiscoverToggle} />
-      )}
+        {/* Discover Chats Section */}
+        {isDiscoverChatsVisible && (
+          <DiscoverChats
+            handleCancel={handleDiscoverToggle}
+            onChatSelect={handleChatClick} // reuse the same function as chat list items
+          />
+        )}
+
       </div>
 
 

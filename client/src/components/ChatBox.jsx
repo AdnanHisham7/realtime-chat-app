@@ -3,27 +3,55 @@ import { AuthContext } from '../context/AuthContext'
 import { ChatContext } from '../context/ChatContext'
 import { useFetchRecipientUser } from '../hooks/useFetchRecipient'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowLeft, faCircleUser, faEllipsisVertical, faMicrophone, faPaperclip, faPaperPlane, faPhone, faVideo } from '@fortawesome/free-solid-svg-icons'
+import { faArrowDown, faArrowLeft, faCircleUser, faEllipsisVertical, faMicrophone, faPaperclip, faPaperPlane, faPhone, faUserCircle, faVideo } from '@fortawesome/free-solid-svg-icons'
 import moment from 'moment/moment'
 import ReactInputEmoji from 'react-input-emoji';
+import { Transition } from '@headlessui/react';
 
 
 const ChatBox = ({ handleBackToChats }) => {
     const { user } = useContext(AuthContext);
-    const { currentChat, messages, isMessagesLoading, sendTextMessage } = useContext(ChatContext);
+    const { currentChat, messages, isMessagesLoading, sendTextMessage, onlineUsers } = useContext(ChatContext);
     const { recipientUser } = useFetchRecipientUser(currentChat, user);
+
+    // Check if the recipient is online.
+    const isOnline = onlineUsers?.some(
+        (onlineUser) => onlineUser?.userId === recipientUser?._id
+    );
 
     const [textMessage, setTextMessage] = useState("")
 
     const chatRef = useRef(null);
+    const dummyRef = useRef(null);
+    const [isAtBottom, setIsAtBottom] = useState(true);
 
     useEffect(() => {
-        if (chatRef.current) {
-            chatRef.current.style.scrollBehavior = 'smooth';
-            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+        const handleScroll = () => {
+            if (chatRef.current) {
+                const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
+                setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+            }
+        };
+
+        const chatContainer = chatRef.current;
+        if (chatContainer) {
+            chatContainer.addEventListener("scroll", handleScroll);
         }
+
+        return () => {
+            if (chatContainer) {
+                chatContainer.removeEventListener("scroll", handleScroll);
+            }
+        };
     }, [messages]);
 
+
+
+    useEffect(() => {
+        if (dummyRef.current) {
+            dummyRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages]);
 
     if (!recipientUser)
         return <p className="flex justify-center items-center h-full">No conversation selected yet.</p>;
@@ -33,6 +61,7 @@ const ChatBox = ({ handleBackToChats }) => {
 
     return (
         <div className="h-full lg:min-h-0 min-h-screen mb-10 lg:mb-0 flex flex-col bg-gray-100 rounded-lg border shadow-md">
+
             {/* Top Bar */}
             <div className="flex items-center justify-between px-4 py-3 bg-white shadow-sm sticky top-0 z-10">
                 <div className="flex items-center gap-3">
@@ -42,10 +71,40 @@ const ChatBox = ({ handleBackToChats }) => {
                     >
                         <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
                     </button>
-                    <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+
+                    <div className="w-10 h-10 overflow-hidden rounded-full bg-gray-300">
+                        {recipientUser?.profile ? (
+                            <img
+                                src={recipientUser?.profile}
+                                alt={`${recipientUser?.name} profile`}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <FontAwesomeIcon
+                                icon={faUserCircle}
+                                className="w-full h-full object-cover text-gray-400"
+                            />
+                        )}
+                    </div>
+
                     <div>
-                        <h3 className="text-lg font-semibold">{recipientUser?.name || "Recipient"}</h3>
-                        <p className="text-sm text-gray-500">online</p>
+                        <h3
+                            className={`text-lg font-semibold transition-transform duration-300 ${isOnline ? "-translate-y-1" : "translate-y-0"
+                                }`}
+                        >
+                            {recipientUser?.name || "Recipient"}
+                        </h3>
+                        <Transition
+                            show={isOnline}
+                            enter="transition-opacity duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="transition-opacity duration-300"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <p className="text-sm text-gray-500">online</p>
+                        </Transition>
                     </div>
                 </div>
                 <div className="flex items-center gap-6 text-gray-600">
@@ -54,6 +113,7 @@ const ChatBox = ({ handleBackToChats }) => {
                     <FontAwesomeIcon icon={faEllipsisVertical} className="text-xl cursor-pointer" />
                 </div>
             </div>
+
 
             {/* Chat Content */}
             <div ref={chatRef} className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-1">
@@ -163,12 +223,24 @@ const ChatBox = ({ handleBackToChats }) => {
                         </React.Fragment>
                     );
                 })}
-
-
+                <div ref={dummyRef}></div>
             </div>
+
 
             {/* Input Field */}
             <div className="flex items-center gap-3 px-4 py-3 bg-white shadow-sm sticky bottom-10 lg:bottom-0 z-10">
+                <div className='relative'>
+                    {!isAtBottom && (
+                        <div className="absolute bottom-12 left-2 transform -translate-x-1/3">
+                            <button
+                                onClick={() => dummyRef.current?.scrollIntoView({ behavior: "smooth" })}
+                                className="w-8 h-8 bg-gray-300 rounded-full shadow-md hover:bg-gray-400 focus:outline-none"
+                            >
+                                <FontAwesomeIcon icon={faArrowDown} className="text-sm text-gray-700" />
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <FontAwesomeIcon icon={faPaperclip} className="text-2xl text-gray-600 cursor-pointer" />
                 <FontAwesomeIcon icon={faMicrophone} className="text-2xl text-gray-600 cursor-pointer" />
 
