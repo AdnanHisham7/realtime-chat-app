@@ -3,16 +3,32 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
 import { useFetchRecipientUser } from '../hooks/useFetchRecipient'
 import { ChatContext } from '../context/ChatContext';
+import { unreadNotificationsFunc } from '../utils/unreadNotifications';
+import { useFetchLatestMessage } from '../hooks/useFetchLatestMessage';
+import moment from 'moment';
 
 const UserChat = ({ chat, user }) => {
   const { recipientUser } = useFetchRecipientUser(chat, user);
 
-  const { onlineUsers } = useContext(ChatContext);
-
+  const { onlineUsers, notifications, markThisUserNotificationsAsRead } = useContext(ChatContext);
+  const { latestMessage } = useFetchLatestMessage(chat)
   // Check if the recipient is online.
   const isOnline = onlineUsers?.some(
     (onlineUser) => onlineUser?.userId === recipientUser?._id
   );
+
+  const unreadNotifications = unreadNotificationsFunc(notifications || []);
+  const thisUserNotifications = unreadNotifications.filter(
+    n => n?.senderId === recipientUser?._id
+  );
+
+  const truncateText = (text) =>{
+    let shortText = text.substring(0,30)
+    if(text.length > 30){
+      shortText = shortText + "..."
+    }
+    return shortText
+  }
 
 
   return (
@@ -20,6 +36,11 @@ const UserChat = ({ chat, user }) => {
       <div
         key={recipientUser?._id}
         className="flex items-center justify-between py-3 px-4 bg-transparent border-b border-gray-200 hover:bg-gray-100 transition cursor-pointer"
+        onClick={() => {
+          if (thisUserNotifications?.length !== 0) {
+            markThisUserNotificationsAsRead(thisUserNotifications)
+          }
+        }}
       >
         {/* Profile and Chat Info */}
         <div className="flex items-center space-x-3 w-full">
@@ -54,17 +75,17 @@ const UserChat = ({ chat, user }) => {
               {recipientUser?.name}
             </p>
             <p className="text-gray-500 text-xs truncate">
-              {chat?.lastMessage || "No messages yet"}
+              {latestMessage?.text ? truncateText(latestMessage?.text) : "No messages yet"}
             </p>
           </div>
         </div>
 
         {/* Activity and Unread Count */}
         <div className="text-right shrink-0">
-          <p className="text-xxs text-gray-400">{"23.12.122"}</p>
-          {chat?.unreadCount > 0 && (
+          <p className="text-xxs text-gray-400">{moment(latestMessage?.createdAt).calendar()}</p>
+          {thisUserNotifications?.length > 0 && (
             <span className="inline-flex items-center justify-center w-5 h-5 text-xxs font-semibold text-white bg-green-500 rounded-full">
-              {chat.unreadCount}
+              {thisUserNotifications.length}
             </span>
           )}
         </div>

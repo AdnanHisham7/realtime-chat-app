@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { ChatContext } from '../context/ChatContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
@@ -7,6 +7,12 @@ import { AuthContext } from '../context/AuthContext'
 const DiscoverChats = ({ handleCancel, onChatSelect  }) => {
   const { user } = useContext(AuthContext)
   const { discoverChats, createChat, onlineUsers } = useContext(ChatContext)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Filter chats based on search query
+  const filteredChats = discoverChats.filter(u =>
+    u.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <div className="w-full mx-auto rounded-lg border bg-white h-full flex flex-col">
@@ -26,21 +32,24 @@ const DiscoverChats = ({ handleCancel, onChatSelect  }) => {
       <div className="p-4">
         <input
           type="text"
-          placeholder="Chat search..."
+          placeholder="Search people..."
           className="w-full p-3 border bg-transparent text-black border-gray-300 rounded-md text-xs focus:outline-none"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
       {/* Chat list */}
       <div className="overflow-y-auto flex-1 scrollbar-hide">
-        {discoverChats.length > 0 ? (
-          discoverChats.map((u) => (
+        {filteredChats.length > 0 ? (
+          filteredChats.map((u) => (
             <div
               key={u._id}
               onClick={async () => {
                 const newChat = await createChat(user.id, u._id);
                 onChatSelect(newChat);             
                 handleCancel();
+                
               }}
               className="flex items-center justify-between py-4 px-5 bg-transparent border-b border-gray-100 hover:bg-gray-200 transition cursor-pointer"
             >

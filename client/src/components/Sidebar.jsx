@@ -6,6 +6,7 @@ import { faCommentDots, } from "@fortawesome/free-regular-svg-icons";
 import { AuthContext } from "../context/AuthContext";
 
 import { useMediaQuery } from "react-responsive";
+import Notification from "./Notification";
 const Sidebar = () => {
     const { logoutUser } = useContext(AuthContext);
 
@@ -13,6 +14,7 @@ const Sidebar = () => {
         { icon: <FontAwesomeIcon icon={faComments} />, tooltip: "Logo" },
         { icon: <FontAwesomeIcon icon={faCommentDots} />, tooltip: "Chats", onClick: () => console.log("Chats clicked") },
         { icon: <FontAwesomeIcon icon={faUserGroup} />, tooltip: "Contacts", onClick: () => console.log("Contacts clicked") },
+        { icon: <Notification/>, tooltip: "Notifications", onClick: () => console.log("Contacts clicked") },
     ];
 
     const bottomMenuItems = [
@@ -34,7 +36,7 @@ const Sidebar = () => {
                     >
                         <span className="text-lg">{item.icon}</span>
                         {/* Tooltip */}
-                        <span className="absolute left-12 bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
+                        <span className="absolute left-12 bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all z-10">
                             {item.tooltip}
                         </span>
                     </div>
@@ -54,7 +56,7 @@ const Sidebar = () => {
                     >
                         <span className="text-lg">{item.icon}</span>
                         {/* Tooltip */}
-                        <span className="absolute left-12 bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
+                        <span className="absolute left-12 bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all z-10">
                             {item.tooltip}
                         </span>
                     </div>

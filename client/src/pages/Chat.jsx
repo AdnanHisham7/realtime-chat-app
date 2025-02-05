@@ -9,11 +9,13 @@ import UserChat from '../components/UserChat'
 import DiscoverChats from '../components/DiscoverChats'
 import ChatBox from '../components/ChatBox'
 import { faArrowLeft, faComments, faGear, faUserGroup } from '@fortawesome/free-solid-svg-icons'
+import { useFetchAllUsers } from '../hooks/useFetchAllUsers'
 
 const Chat = () => {
   const { user, logoutUser } = useContext(AuthContext);
   const { userChats, isUserChatsLoading, updateCurrentChat } = useContext(ChatContext);
 
+  const { allUsers, loading: allUsersLoading } = useFetchAllUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [isChatBoxVisible, setChatBoxVisible] = useState(false);
   const [isDiscoverChatsVisible, setDiscoverChatsVisible] = useState(false); // New state
@@ -31,6 +33,14 @@ const Chat = () => {
     setDiscoverChatsVisible(!isDiscoverChatsVisible); // Toggle DiscoverChats visibility
   };
 
+  const filteredChats = userChats?.filter(chat => {
+    if (!user || allUsersLoading) return false;
+    const recipientId = chat.members.find(id => id !== user.id);
+    const recipient = allUsers.find(u => u._id === recipientId);
+    return recipient?.name.toLowerCase().includes(searchQuery.toLowerCase());
+  }) || [];
+
+  console.log("filtered chats", filteredChats)
 
   return (
     <div className="flex flex-col lg:flex-row h-screen">
@@ -83,14 +93,16 @@ const Chat = () => {
 
           {/* Chat List */}
           <div className="overflow-y-auto flex-1 scrollbar-hide">
-            {userChats?.length > 0 ? (
-              userChats.map((chat, index) => (
+            {!allUsersLoading && filteredChats.length > 0 ? (
+              filteredChats.map((chat, index) => (
                 <div key={index} onClick={() => handleChatClick(chat)}>
                   <UserChat chat={chat} user={user} />
                 </div>
               ))
             ) : (
-              <p className="text-center text-sm text-gray-500">No chats found.</p>
+              <p className="text-center text-sm text-gray-500">
+                {allUsersLoading ? 'Loading...' : 'No chats found.'}
+              </p>
             )}
           </div>
         </div>

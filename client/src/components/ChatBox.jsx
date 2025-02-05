@@ -46,7 +46,6 @@ const ChatBox = ({ handleBackToChats }) => {
     }, [messages]);
 
 
-
     useEffect(() => {
         if (dummyRef.current) {
             dummyRef.current.scrollIntoView({ behavior: "smooth" });
@@ -165,11 +164,20 @@ const ChatBox = ({ handleBackToChats }) => {
                             >
                                 {/* Avatar: Show only if it's the first message of the group (different sender) */}
                                 {!isOutgoing && isFirstMessageOfGroup && (
-                                    <FontAwesomeIcon
-                                        icon={faCircleUser}
-                                        className="w-5 h-5 mr-1 text-gray-400"
-                                    ></FontAwesomeIcon>
+                                    recipientUser?.profile ? (
+                                        <img
+                                            src={recipientUser.profile}
+                                            alt={`${recipientUser.name} profile`}
+                                            className="w-5 h-5 mb-8 ml-1 text-gray-400 rounded-full"
+                                        />
+                                    ) : (
+                                        <FontAwesomeIcon
+                                            icon={faUserCircle}
+                                            className="w-5 h-5 mb-8 ml-1 text-gray-400"
+                                        />
+                                    )
                                 )}
+
 
                                 <div>
                                     {/* Text Messages */}
