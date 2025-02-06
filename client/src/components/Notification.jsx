@@ -61,7 +61,7 @@ const Notification = () => {
                             modifiedNotifications.map((n, index) => (
                                 <div
                                     key={index}
-                                    className={`px-4 py-3 flex flex-col border-b dark:border-gray-800 ${n.isRead ? "bg-white dark:bg-midGray" : "bg-violet-100 dark:bg-primary"
+                                    className={`px-4 py-3 flex flex-col border-b dark:border-gray-800 ${n.isRead ? "bg-white dark:bg-midGray" : "bg-violet-200 dark:bg-primary"
                                         } hover:bg-gray-50 transition`}
                                     onClick={() => {
                                         markNotificationAsRead(n, userChats, user);

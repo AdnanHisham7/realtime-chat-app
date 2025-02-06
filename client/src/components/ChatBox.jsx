@@ -8,12 +8,16 @@ import moment from 'moment/moment'
 import ReactInputEmoji from 'react-input-emoji';
 import { Transition } from '@headlessui/react';
 import { useTheme } from '../context/ThemeContext'
+import { baseUrl } from '../utils/services'
+import useFetchUserProfile from '../hooks/useFetchUserProfile'
 
 const ChatBox = ({ handleBackToChats }) => {
     const { user } = useContext(AuthContext);
     const { darkMode } = useTheme();
     const { currentChat, messages, isMessagesLoading, sendTextMessage, onlineUsers } = useContext(ChatContext);
     const { recipientUser } = useFetchRecipientUser(currentChat, user);
+    const { userProfile } = useFetchUserProfile();
+
 
     // Check if the recipient is online.
     const isOnline = onlineUsers?.some(
@@ -73,19 +77,25 @@ const ChatBox = ({ handleBackToChats }) => {
                     </button>
 
                     <div className="w-10 h-10 overflow-hidden rounded-full bg-gray-300 dark:bg-customGray">
-                        {recipientUser?.profile ? (
+                        {recipientUser?.profileImage && recipientUser.profileImage.trim() !== "" ? (
                             <img
-                                src={recipientUser?.profile}
-                                alt={`${recipientUser?.name} profile`}
+                                src={`${baseUrl}${recipientUser.profileImage}`}
+                                alt={`${recipientUser.name} profile`}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null; // Prevent infinite loop
+                                    e.target.style.display = "none"; // Hide broken image
+                                    e.target.nextSibling.style.display = "block"; // Show FontAwesome icon
+                                }}
                             />
-                        ) : (
-                            <FontAwesomeIcon
-                                icon={faUserCircle}
-                                className="w-full h-full object-cover text-gray-400 dark:text-gray-600"
-                            />
-                        )}
+                        ) : null}
+                        <FontAwesomeIcon
+                            icon={faUserCircle}
+                            className="w-full h-full object-cover text-gray-400 dark:text-gray-600"
+                            style={{ display: recipientUser?.profileImage && recipientUser.profileImage.trim() !== "" ? "none" : "block" }}
+                        />
                     </div>
+
 
                     <div>
                         <h3
@@ -164,19 +174,27 @@ const ChatBox = ({ handleBackToChats }) => {
                             >
                                 {/* Avatar: Show only if it's the first message of the group (different sender) */}
                                 {!isOutgoing && isFirstMessageOfGroup && (
-                                    recipientUser?.profile ? (
-                                        <img
-                                            src={recipientUser.profile}
-                                            alt={`${recipientUser.name} profile`}
-                                            className="w-5 h-5 ml-1 text-gray-400 rounded-full"
-                                        />
-                                    ) : (
+                                    <>
+                                        {recipientUser?.profileImage && recipientUser.profileImage.trim() !== "" ? (
+                                            <img
+                                                src={`${baseUrl}${recipientUser.profileImage}`}
+                                                alt={`${recipientUser.name} profile`}
+                                                className="w-5 h-5 ml-1 text-gray-400 rounded-full"
+                                                onError={(e) => {
+                                                    e.target.onerror = null; // Prevent infinite loop
+                                                    e.target.style.display = "none"; // Hide broken image
+                                                    e.target.nextSibling.style.display = "inline-block"; // Show FontAwesome icon
+                                                }}
+                                            />
+                                        ) : null}
                                         <FontAwesomeIcon
                                             icon={faUserCircle}
                                             className="w-5 h-5 ml-1 text-gray-400"
+                                            style={{ display: recipientUser?.profileImage && recipientUser.profileImage.trim() !== "" ? "none" : "inline-block" }}
                                         />
-                                    )
+                                    </>
                                 )}
+
 
 
                                 <div>
@@ -222,10 +240,25 @@ const ChatBox = ({ handleBackToChats }) => {
 
                                 {/* Avatar: Show only if it's the first outgoing message */}
                                 {isOutgoing && isFirstMessageOfGroup && (
-                                    <FontAwesomeIcon
-                                        icon={faCircleUser}
-                                        className="w-5 h-5 mb-8 ml-1 text-gray-400"
-                                    ></FontAwesomeIcon>
+                                    <>
+                                        {userProfile?.profileImage && userProfile.profileImage.trim() !== "" ? (
+                                            <img
+                                                src={`${baseUrl}${userProfile.profileImage}`}
+                                                alt={`${userProfile.name} profile`}
+                                                className="w-5 h-5 mb-8 ml-1 text-gray-400 rounded-full"
+                                                onError={(e) => {
+                                                    e.target.onerror = null; // Prevent infinite loop
+                                                    e.target.style.display = "none"; // Hide broken image
+                                                    e.target.nextSibling.style.display = "inline-block"; // Show FontAwesome icon
+                                                }}
+                                            />
+                                        ) : null}
+                                        <FontAwesomeIcon
+                                            icon={faUserCircle}
+                                            className="w-5 h-5 ml-1 text-gray-400"
+                                            style={{ display: userProfile?.profileImage && userProfile.profileImage.trim() !== "" ? "none" : "inline-block" }}
+                                        />
+                                    </>
                                 )}
                             </div>
                         </React.Fragment>

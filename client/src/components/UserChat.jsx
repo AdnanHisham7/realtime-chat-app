@@ -6,6 +6,7 @@ import { ChatContext } from '../context/ChatContext';
 import { unreadNotificationsFunc } from '../utils/unreadNotifications';
 import { useFetchLatestMessage } from '../hooks/useFetchLatestMessage';
 import moment from 'moment';
+import { baseUrl } from '../utils/services';
 
 const UserChat = ({ chat, user }) => {
   const { recipientUser } = useFetchRecipientUser(chat, user);
@@ -22,9 +23,9 @@ const UserChat = ({ chat, user }) => {
     n => n?.senderId === recipientUser?._id
   );
 
-  const truncateText = (text) =>{
-    let shortText = text.substring(0,30)
-    if(text.length > 30){
+  const truncateText = (text) => {
+    let shortText = text.substring(0, 30)
+    if (text.length > 30) {
       shortText = shortText + "..."
     }
     return shortText
@@ -48,19 +49,25 @@ const UserChat = ({ chat, user }) => {
           <div className="relative w-10 h-10 rounded-full">
 
             <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-customGray overflow-hidden shrink-0">
-              {recipientUser?.profile ? (
+              {recipientUser?.profileImage && recipientUser.profileImage.trim() !== "" ? (
                 <img
-                  src={recipientUser?.profile}
-                  alt={`${recipientUser?.name} profile`}
+                  src={`${baseUrl}${recipientUser.profileImage}`}
+                  alt={`${recipientUser.name} profile`}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.style.display = "none"; // Hide broken image
+                    e.target.nextSibling.style.display = "block"; // Show icon instead
+                  }}
                 />
-              ) : (
-                <FontAwesomeIcon
-                  icon={faUserCircle}
-                  className="w-full h-full text-gray-400 dark:text-gray-600"
-                />
-              )}
+              ) : null}
+              <FontAwesomeIcon
+                icon={faUserCircle}
+                className="w-full h-full text-gray-400 dark:text-gray-600"
+                style={{ display: recipientUser?.profileImage && recipientUser.profileImage.trim() !== "" ? "none" : "block" }}
+              />
             </div>
+
             <span
               className={`absolute bottom-0 right-0 transform translate-x-1/4 translate-y-1/4 w-3.5 h-3.5 rounded-full ${isOnline
                 ? "bg-green-500"

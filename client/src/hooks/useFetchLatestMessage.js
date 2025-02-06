@@ -20,7 +20,6 @@ export const useFetchLatestMessage = (chat) => {
       } catch (error) {
         const errorMessage =
           error.response?.data?.message || "Something went wrong!";
-        console.log(errorMessage);
       }
     };
 

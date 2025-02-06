@@ -3,8 +3,9 @@ import { ChatContext } from '../context/ChatContext'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
 import { AuthContext } from '../context/AuthContext'
+import { baseUrl } from '../utils/services'
 
-const DiscoverChats = ({ handleCancel, onChatSelect  }) => {
+const DiscoverChats = ({ handleCancel, onChatSelect }) => {
   const { user } = useContext(AuthContext)
   const { discoverChats, createChat, onlineUsers } = useContext(ChatContext)
   const [searchQuery, setSearchQuery] = useState('')
@@ -47,28 +48,34 @@ const DiscoverChats = ({ handleCancel, onChatSelect  }) => {
               key={u._id}
               onClick={async () => {
                 const newChat = await createChat(user.id, u._id);
-                onChatSelect(newChat);             
+                onChatSelect(newChat);
                 handleCancel();
-                
+
               }}
               className="flex items-center justify-between py-4 px-5 bg-transparent border-b border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-midGray transition cursor-pointer"
             >
               <div className="flex items-center space-x-3">
                 <div className="relative w-10 h-10 bg-gray-300 dark:bg-customGray rounded-full">
                   <div className="w-full h-full overflow-hidden rounded-full">
-                    {u?.profile ? (
+                    {u?.profileImage && u.profileImage.trim() !== "" ? (
                       <img
-                        src={u?.profile}
-                        alt={`${u?.name} profile`}  
+                        src={`${baseUrl}${u.profileImage}`}
+                        alt={`${u?.name} profile`}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null; // Prevent infinite loop
+                          e.target.style.display = "none"; // Hide broken image
+                          e.target.nextSibling.style.display = "block"; // Show FontAwesome icon
+                        }}
                       />
-                    ) : (
-                      <FontAwesomeIcon
-                        icon={faUserCircle}
-                        className="w-full h-full object-cover text-gray-400 dark:text-gray-600"
-                      />
-                    )}
+                    ) : null}
+                    <FontAwesomeIcon
+                      icon={faUserCircle}
+                      className="w-full h-full object-cover text-gray-400 dark:text-gray-600"
+                      style={{ display: u?.profileImage && u.profileImage.trim() !== "" ? "none" : "block" }}
+                    />
                   </div>
+
                   <span
                     className={`absolute bottom-0 right-0 transform translate-x-1/4 translate-y-1/4 w-3.5 h-3.5 rounded-full ${onlineUsers?.some((user) => user?.userId === u?._id)
                       ? "bg-green-500"
@@ -79,7 +86,7 @@ const DiscoverChats = ({ handleCancel, onChatSelect  }) => {
 
                 <div className="text-sm">
                   <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{u?.name}</p>
-                  <p className="text-gray-500 text-xs truncate">{user?.bio ? "":"Tap to send your first message"}</p>
+                  <p className="text-gray-500 text-xs truncate">{user?.bio ? "" : "Tap to send your first message"}</p>
                 </div>
               </div>
             </div>
