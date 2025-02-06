@@ -47,20 +47,21 @@ const Chat = () => {
       {/* Sidebar */}
       <Sidebar className="hidden lg:block" />
 
-      <Toaster richColors position='top-center' />
+      <Toaster position='bottom-left' />
 
       {/* Bottom Navigation for Small Screens */}
-      <div className="lg:hidden fixed bottom-0 z-20 w-full bg-white border-t flex justify-around py-2 shadow-md">
+      <div className={`${isChatBoxVisible ? "hidden" : ""} lg:hidden fixed bottom-0 z-20 w-full bg-white dark:bg-customGray border-t dark:border-gray-800 flex justify-around py-2 shadow-md`}>
         <button className="flex-1 text-center">
-          <FontAwesomeIcon icon={faComments} className="text-gray-600" />
+          <FontAwesomeIcon icon={faComments} className="text-gray-600 dark:text-gray-300" />
         </button>
         <button className="flex-1 text-center">
-          <FontAwesomeIcon icon={faUserGroup} className="text-gray-600" />
+          <FontAwesomeIcon icon={faUserGroup} className="text-gray-600 dark:text-gray-300" />
         </button>
         <button className="flex-1 text-center">
-          <FontAwesomeIcon icon={faGear} className="text-gray-600" />
+          <FontAwesomeIcon icon={faGear} className="text-gray-600 dark:text-gray-300" />
         </button>
       </div>
+
 
       {/* Chats List Section */}
       <div

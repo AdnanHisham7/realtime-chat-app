@@ -60,10 +60,10 @@ const ChatBox = ({ handleBackToChats }) => {
         return <p className="flex justify-center items-center h-full">Messages Loading...</p>;
 
     return (
-        <div className="h-full lg:min-h-0 min-h-screen mb-10 lg:mb-0 flex flex-col bg-gray-100 dark:bg-midGray rounded-lg border dark:border-gray-800 shadow-md">
+        <div className="h-full lg:min-h-0 min-h-screen flex flex-col bg-gray-100 dark:bg-midGray rounded-lg border dark:border-gray-800 shadow-md">
 
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-customGray shadow-sm sticky top-0 z-10 rounded-lg">
+            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-customGray shadow-sm sticky top-0 z-10 rounded-t-lg h-[70px]">
                 <div className="flex items-center gap-3">
                     <button
                         className="lg:hidden text-gray-600 mb-2 flex items-center"
@@ -89,8 +89,7 @@ const ChatBox = ({ handleBackToChats }) => {
 
                     <div>
                         <h3
-                            className={`text-lg font-semibold dark:text-gray-200 transition-transform duration-300 ${isOnline ? "-translate-y-" : "translate-y-0"
-                                }`}
+                            className={`text-lg font-semibold dark:text-gray-200 transition-all duration-300`}
                         >
                             {recipientUser?.name || "Recipient"}
                         </h3>
@@ -183,7 +182,7 @@ const ChatBox = ({ handleBackToChats }) => {
                                 <div>
                                     {/* Text Messages */}
                                     <div
-                                        className={`${isOutgoing ? 'bg-violet-500 text-white' : 'bg-gray-200 dark:bg-customGray dark:text-gray-300'
+                                        className={`${isOutgoing ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-customGray dark:text-gray-300'
                                             } ps-3 pr-14 py-2 rounded-lg max-w-xs relative`}
                                     >
                                         {/* Time (positioned in the corner) */}
@@ -210,7 +209,7 @@ const ChatBox = ({ handleBackToChats }) => {
                                     {/* Audio Player */}
                                     {message.audio && (
                                         <div
-                                            className={`${isOutgoing ? 'bg-violet-500' : 'bg-gray-200 dark:bg-customGray'
+                                            className={`${isOutgoing ? 'bg-primary' : 'bg-gray-200 dark:bg-customGray'
                                                 } mt-2 rounded-lg p-2 max-w-xs w-full`}
                                         >
                                             <audio controls className="w-full">
@@ -237,7 +236,7 @@ const ChatBox = ({ handleBackToChats }) => {
 
 
             {/* Input Field */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-customGray shadow-sm sticky bottom-10 lg:bottom-0 z-10 rounded-lg">
+            <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-customGray shadow-sm sticky bottom-0 lg:bottom-0 z-10 rounded-b-lg">
                 <div className='relative'>
                     {!isAtBottom && (
                         <div className="absolute bottom-12 left-2 transform -translate-x-1/3">
@@ -265,7 +264,7 @@ const ChatBox = ({ handleBackToChats }) => {
                 />
 
                 {/* Send Button */}
-                <button onClick={() => sendTextMessage(textMessage, user, currentChat._id, setTextMessage)} className="bg-violet-500 text-white p-3 rounded-full hover:bg-violet-600">
+                <button onClick={() => sendTextMessage(textMessage, user, currentChat._id, setTextMessage)} className="bg-primary text-white p-3 rounded-full">
                     <FontAwesomeIcon icon={faPaperPlane} className="text-xl" />
                 </button>
             </div>

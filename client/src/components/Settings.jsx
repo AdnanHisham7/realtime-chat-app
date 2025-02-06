@@ -1,0 +1,117 @@
+// Settings.jsx
+import React, { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPalette, faCookieBite, faVolumeUp, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { useTheme } from "../context/ThemeContext";
+
+const colorPalette = [
+    { name: 'Violet', value: '#6366f1' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Green', value: '#22c55e' },
+    { name: 'Red', value: '#ef4444' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Indigo', value: '#6366f9' },
+    { name: 'Gray', value: '#656565' },
+    { name: 'Mauve', value: '#988488' },
+    { name: 'Deep Teal', value: '#123434' },
+    { name: 'Charcoal', value: '#212112' },
+    { name: 'Warm Taupe', value: '#897867' },
+];
+
+const tabIcons = {
+    appearance: faPalette,
+    cookies: faCookieBite,
+    sounds: faVolumeUp,
+    "privacy-policy": faShieldAlt,
+};
+
+
+const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, handleApplyColor, activeTab, setActiveTab }) => {
+    const { toggleDarkMode, darkMode } = useTheme();
+
+    return (
+        showModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-customGray rounded-lg p-6 w-[600px] h-[400px] flex relative">
+                    {/* Close Button */}
+                    <button
+                        onClick={closeModal}
+                        className="absolute top-2 right-2 text-gray-400 dark:text-gray-600 hover:text-primary transition-colors"
+                    >
+                        <FontAwesomeIcon icon={faTimes} size="lg" />
+                    </button>
+
+                    {/* Left Tabs */}
+                    <div className="flex flex-col w-1/3 border-r dark:border-gray-800 pr-4">
+                        {["appearance", "cookies", "sounds", "privacy-policy"].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`flex items-center gap-3 text-left text-sm p-2 rounded mb-1 transition-colors duration-300 ${activeTab === tab ? "bg-primary text-white" : "hover:bg-gray-100 dark:hover:bg-midGray"}`}>
+                                <FontAwesomeIcon icon={tabIcons[tab]} className={`${activeTab === tab ? "text-white" : ""} text-gray-500 dark:text-gray-300`} />
+                                <span>{tab.split("-").join(" ").replace(/\b\w/g, (l) => l.toUpperCase())}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Right Content */}
+                    <div className="w-2/3 pl-4">
+                        {activeTab === 'appearance' && (
+                            <div>
+                                {/* Dark/Light Theme Toggle */}
+                                <div className="flex items-center mb-6">
+                                    <label className="text-sm text-gray-700 dark:text-gray-300 mr-4">Dark Mode</label>
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox"
+                                            checked={darkMode}
+                                            onChange={toggleDarkMode}
+                                            id="theme-toggle"
+                                            className="toggle-checkbox hidden"
+                                        />
+                                        <label
+                                            htmlFor="theme-toggle"
+                                            className={`w-14 h-8 flex items-center bg-gray-300 dark:bg-gray-600 rounded-full p-1 cursor-pointer transition-colors duration-300 ${darkMode ? 'bg-primary' : ''}`}
+                                        >
+                                            <span
+                                                className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${darkMode ? 'translate-x-6' : ''}`}
+                                            />
+                                        </label>
+                                    </div>
+                                    <label className="text-sm text-gray-700 dark:text-gray-300 ml-4">Light Mode</label>
+                                </div>
+
+
+                                {/* Color Palette */}
+                                <div className="mb-4">
+                                    <h3 className="font-semibold mb-4">Choose Primary Color</h3>
+                                    <div className="grid grid-cols-6 gap-2 w-[250px]">
+                                        {colorPalette.map((color) => (
+                                            <button
+                                                key={color.name}
+                                                onClick={() => setSelectedColor(color.value)}
+                                                className={`h-8 w-8 rounded-sm ${selectedColor === color.value ? 'ring-2 ring-offset-2' : ''}`}
+                                                style={{ backgroundColor: color.value }}
+                                                title={color.name}
+                                            />
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={handleApplyColor}
+                                        className="mt-6 bg-transparent border border-primary text-xs dark:text-white px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-950 transition-colors duration-200"
+                                    >
+                                        Apply Color
+                                    </button>
+
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
+    );
+
+};
+
+export default Settings;

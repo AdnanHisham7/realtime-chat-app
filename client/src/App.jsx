@@ -4,12 +4,20 @@ import './App.css'
 import Chat from "./pages/Chat"
 import Register from "./pages/Register"
 import Login from "./pages/Login"
-import { useContext } from "react"
+import { useContext, useEffect } from "react"
 import { AuthContext } from "./context/AuthContext"
 import { ChatProvider } from "./context/ChatContext"
 
 function App() {
   const { user } = useContext(AuthContext)
+
+  useEffect(() => {
+    const savedColor = localStorage.getItem('primaryColor');
+    if (savedColor) {
+      document.documentElement.style.setProperty('--primary-color', savedColor);
+    }
+  }, []);
+
   return (
     <ChatProvider user={user}>
       <Routes>

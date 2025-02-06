@@ -1,33 +1,45 @@
-import React, { useContext } from "react";
-import { Link } from "react-router-dom";
+// Sidebar.jsx
+import React, { useState, useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faUserGroup, faBoxArchive, faMoon, faGear, faArrowRightFromBracket, faSun } from "@fortawesome/free-solid-svg-icons";
-import { faCommentDots, } from "@fortawesome/free-regular-svg-icons";
+import { faCommentDots } from "@fortawesome/free-regular-svg-icons";
 import { AuthContext } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-
-import { useMediaQuery } from "react-responsive";
 import Notification from "./Notification";
+import Settings from "./Settings";
+import { toast } from "sonner";
+
 const Sidebar = () => {
     const { toggleDarkMode, darkMode } = useTheme();
     const { logoutUser } = useContext(AuthContext);
+
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('appearance');
+    const [selectedColor, setSelectedColor] = useState(() => localStorage.getItem('primaryColor') || '#6366f1');
+
+    const handleApplyColor = () => {
+        document.documentElement.style.setProperty('--primary-color', selectedColor);
+        localStorage.setItem('primaryColor', selectedColor);
+        toast.info('Your theme has been updated successfully!')
+        setShowSettingsModal(false);
+    };
 
     const topMenuItems = [
         { icon: <FontAwesomeIcon icon={faComments} />, tooltip: "Logo" },
         { icon: <FontAwesomeIcon icon={faCommentDots} />, tooltip: "Chats", onClick: () => window.location.reload() },
         { icon: <FontAwesomeIcon icon={faUserGroup} />, tooltip: "Contacts", onClick: () => console.log("Contacts clicked") },
-        { icon: <Notification/>, tooltip: "Notifications", onClick: () => console.log("Contacts clicked") },
+        { icon: <Notification />, tooltip: "Notifications", onClick: () => console.log("Contacts clicked") },
     ];
 
     const bottomMenuItems = [
         { icon: <FontAwesomeIcon icon={faBoxArchive} />, tooltip: "Archived Messages", onClick: () => console.log("Archived clicked") },
         { icon: <FontAwesomeIcon icon={darkMode ? faSun : faMoon} />, tooltip: "Switch Mode", onClick: toggleDarkMode },
-        { icon: <FontAwesomeIcon icon={faGear} />, tooltip: "Settings", onClick: () => console.log("Settings clicked") },
+        { icon: <FontAwesomeIcon icon={faGear} />, tooltip: "Settings", onClick: () => setShowSettingsModal(true) },
         { icon: <FontAwesomeIcon icon={faArrowRightFromBracket} />, tooltip: "Logout", onClick: logoutUser },
     ];
 
     return (
-        <div className="lg:flex flex-col justify-between h-screen w-20 bg-white dark:bg-customGray text-gray-700 dark:text-gray-100  shadow-lg py-4 hidden">
+        <div className="lg:flex flex-col justify-between h-screen w-20 bg-white dark:bg-customGray text-gray-700 dark:text-gray-100 shadow-lg py-4 hidden">
             {/* Top Section */}
             <div className="flex flex-col items-center space-y-6">
                 {topMenuItems.map((item, index) => (
@@ -64,11 +76,18 @@ const Sidebar = () => {
                     </div>
                 ))}
             </div>
+
+            <Settings
+                showModal={showSettingsModal}
+                closeModal={() => setShowSettingsModal(false)}
+                selectedColor={selectedColor}
+                setSelectedColor={setSelectedColor}
+                handleApplyColor={handleApplyColor}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+            />
         </div>
     );
 };
-
-
-
 
 export default Sidebar;

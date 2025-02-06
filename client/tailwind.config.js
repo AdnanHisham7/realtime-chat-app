@@ -13,6 +13,7 @@ export default {
         '3xs': '0.525rem',
       },
       colors: {
+        primary:'var(--primary-color)',
         customGreen: {
           DEFAULT: '#209039',
         },
