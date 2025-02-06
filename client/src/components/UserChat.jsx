@@ -35,7 +35,7 @@ const UserChat = ({ chat, user }) => {
     <div>
       <div
         key={recipientUser?._id}
-        className="flex items-center justify-between py-3 px-4 bg-transparent border-b border-gray-200 hover:bg-gray-100 transition cursor-pointer"
+        className="flex items-center justify-between py-3 px-4 bg-transparent border-b border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-midGray transition cursor-pointer"
         onClick={() => {
           if (thisUserNotifications?.length !== 0) {
             markThisUserNotificationsAsRead(thisUserNotifications)
@@ -45,9 +45,9 @@ const UserChat = ({ chat, user }) => {
         {/* Profile and Chat Info */}
         <div className="flex items-center space-x-3 w-full">
           {/* Profile Image */}
-          <div className="relative w-10 h-10 bg-gray-300 rounded-full">
+          <div className="relative w-10 h-10 rounded-full">
 
-            <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-customGray overflow-hidden shrink-0">
               {recipientUser?.profile ? (
                 <img
                   src={recipientUser?.profile}
@@ -57,7 +57,7 @@ const UserChat = ({ chat, user }) => {
               ) : (
                 <FontAwesomeIcon
                   icon={faUserCircle}
-                  className="w-full h-full text-gray-400"
+                  className="w-full h-full text-gray-400 dark:text-gray-600"
                 />
               )}
             </div>
@@ -65,13 +65,13 @@ const UserChat = ({ chat, user }) => {
               className={`absolute bottom-0 right-0 transform translate-x-1/4 translate-y-1/4 w-3.5 h-3.5 rounded-full ${isOnline
                 ? "bg-green-500"
                 : "bg-gray-500"
-                } border-2 border-white`}
+                } border-2 border-white dark:border-0 dark:border-customGray`}
             ></span>
           </div>
 
           {/* Name and Last Message */}
           <div className="flex-1 text-sm">
-            <p className="font-medium text-gray-800 truncate">
+            <p className="font-medium text-gray-800 dark:text-gray-200 truncate">
               {recipientUser?.name}
             </p>
             <p className="text-gray-500 text-xs truncate">

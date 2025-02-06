@@ -7,10 +7,11 @@ import { faArrowDown, faArrowLeft, faCircleUser, faEllipsisVertical, faMicrophon
 import moment from 'moment/moment'
 import ReactInputEmoji from 'react-input-emoji';
 import { Transition } from '@headlessui/react';
-
+import { useTheme } from '../context/ThemeContext'
 
 const ChatBox = ({ handleBackToChats }) => {
     const { user } = useContext(AuthContext);
+    const { darkMode } = useTheme();
     const { currentChat, messages, isMessagesLoading, sendTextMessage, onlineUsers } = useContext(ChatContext);
     const { recipientUser } = useFetchRecipientUser(currentChat, user);
 
@@ -59,10 +60,10 @@ const ChatBox = ({ handleBackToChats }) => {
         return <p className="flex justify-center items-center h-full">Messages Loading...</p>;
 
     return (
-        <div className="h-full lg:min-h-0 min-h-screen mb-10 lg:mb-0 flex flex-col bg-gray-100 rounded-lg border shadow-md">
+        <div className="h-full lg:min-h-0 min-h-screen mb-10 lg:mb-0 flex flex-col bg-gray-100 dark:bg-midGray rounded-lg border dark:border-gray-800 shadow-md">
 
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white shadow-sm sticky top-0 z-10">
+            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-customGray shadow-sm sticky top-0 z-10 rounded-lg">
                 <div className="flex items-center gap-3">
                     <button
                         className="lg:hidden text-gray-600 mb-2 flex items-center"
@@ -71,7 +72,7 @@ const ChatBox = ({ handleBackToChats }) => {
                         <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
                     </button>
 
-                    <div className="w-10 h-10 overflow-hidden rounded-full bg-gray-300">
+                    <div className="w-10 h-10 overflow-hidden rounded-full bg-gray-300 dark:bg-customGray">
                         {recipientUser?.profile ? (
                             <img
                                 src={recipientUser?.profile}
@@ -81,14 +82,14 @@ const ChatBox = ({ handleBackToChats }) => {
                         ) : (
                             <FontAwesomeIcon
                                 icon={faUserCircle}
-                                className="w-full h-full object-cover text-gray-400"
+                                className="w-full h-full object-cover text-gray-400 dark:text-gray-600"
                             />
                         )}
                     </div>
 
                     <div>
                         <h3
-                            className={`text-lg font-semibold transition-transform duration-300 ${isOnline ? "-translate-y-1" : "translate-y-0"
+                            className={`text-lg font-semibold dark:text-gray-200 transition-transform duration-300 ${isOnline ? "-translate-y-" : "translate-y-0"
                                 }`}
                         >
                             {recipientUser?.name || "Recipient"}
@@ -106,7 +107,7 @@ const ChatBox = ({ handleBackToChats }) => {
                         </Transition>
                     </div>
                 </div>
-                <div className="flex items-center gap-6 text-gray-600">
+                <div className="flex items-center gap-6 text-gray-600 dark:text-gray-300">
                     <FontAwesomeIcon icon={faVideo} className="text-xl cursor-pointer" />
                     <FontAwesomeIcon icon={faPhone} className="text-xl cursor-pointer" />
                     <FontAwesomeIcon icon={faEllipsisVertical} className="text-xl cursor-pointer" />
@@ -120,7 +121,7 @@ const ChatBox = ({ handleBackToChats }) => {
 
                 {/* End-to-End Encryption Message */}
                 <div className="flex justify-center my-4">
-                    <div className="px-4 py-2 text-xs text-gray-600 bg-gray-100 border border-gray-300 rounded-lg shadow-sm">
+                    <div className="px-4 py-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-midGray border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">
                         This chat is end-to-end encrypted. Messages and calls are private.
                     </div>
                 </div>
@@ -151,7 +152,7 @@ const ChatBox = ({ handleBackToChats }) => {
                             {/* Date Tag */}
                             {shouldShowDateTag && (
                                 <div className="flex justify-center my-4">
-                                    <span className="px-4 py-1 text-xs text-gray-500 bg-gray-100 rounded-lg shadow-sm">
+                                    <span className="px-4 py-1 text-xs  text-gray-500 dark:text-gray-200 bg-gray-100 dark:bg-midGray rounded-lg shadow-sm">
                                         {formattedDate}
                                     </span>
                                 </div>
@@ -168,12 +169,12 @@ const ChatBox = ({ handleBackToChats }) => {
                                         <img
                                             src={recipientUser.profile}
                                             alt={`${recipientUser.name} profile`}
-                                            className="w-5 h-5 mb-8 ml-1 text-gray-400 rounded-full"
+                                            className="w-5 h-5 ml-1 text-gray-400 rounded-full"
                                         />
                                     ) : (
                                         <FontAwesomeIcon
                                             icon={faUserCircle}
-                                            className="w-5 h-5 mb-8 ml-1 text-gray-400"
+                                            className="w-5 h-5 ml-1 text-gray-400"
                                         />
                                     )
                                 )}
@@ -182,7 +183,7 @@ const ChatBox = ({ handleBackToChats }) => {
                                 <div>
                                     {/* Text Messages */}
                                     <div
-                                        className={`${isOutgoing ? 'bg-purple-500 text-white' : 'bg-gray-200'
+                                        className={`${isOutgoing ? 'bg-violet-500 text-white' : 'bg-gray-200 dark:bg-customGray dark:text-gray-300'
                                             } ps-3 pr-14 py-2 rounded-lg max-w-xs relative`}
                                     >
                                         {/* Time (positioned in the corner) */}
@@ -209,7 +210,7 @@ const ChatBox = ({ handleBackToChats }) => {
                                     {/* Audio Player */}
                                     {message.audio && (
                                         <div
-                                            className={`${isOutgoing ? 'bg-purple-500' : 'bg-gray-200'
+                                            className={`${isOutgoing ? 'bg-violet-500' : 'bg-gray-200 dark:bg-customGray'
                                                 } mt-2 rounded-lg p-2 max-w-xs w-full`}
                                         >
                                             <audio controls className="w-full">
@@ -236,7 +237,7 @@ const ChatBox = ({ handleBackToChats }) => {
 
 
             {/* Input Field */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-white shadow-sm sticky bottom-10 lg:bottom-0 z-10">
+            <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-customGray shadow-sm sticky bottom-10 lg:bottom-0 z-10 rounded-lg">
                 <div className='relative'>
                     {!isAtBottom && (
                         <div className="absolute bottom-12 left-2 transform -translate-x-1/3">
@@ -249,8 +250,8 @@ const ChatBox = ({ handleBackToChats }) => {
                         </div>
                     )}
                 </div>
-                <FontAwesomeIcon icon={faPaperclip} className="text-2xl text-gray-600 cursor-pointer" />
-                <FontAwesomeIcon icon={faMicrophone} className="text-2xl text-gray-600 cursor-pointer" />
+                <FontAwesomeIcon icon={faPaperclip} className="text-2xl text-gray-600 dark:text-gray-300 cursor-pointer" />
+                <FontAwesomeIcon icon={faMicrophone} className="text-2xl text-gray-600 dark:text-gray-300 cursor-pointer" />
 
                 {/* Use ReactInputEmoji for the input field */}
                 <ReactInputEmoji
@@ -258,13 +259,13 @@ const ChatBox = ({ handleBackToChats }) => {
                     onChange={setTextMessage}
                     placeholder="Type a message"
                     cleanOnEnter
-                    theme='light'
+                    theme={darkMode ? 'dark' : 'light'}
                     onEnter={() => sendTextMessage(textMessage, user, currentChat._id, setTextMessage)}
                     className="flex-1 border rounded-full bg-transparent px-4 py-2 focus:outline-none"
                 />
 
                 {/* Send Button */}
-                <button onClick={() => sendTextMessage(textMessage, user, currentChat._id, setTextMessage)} className="bg-purple-500 text-white p-3 rounded-full hover:bg-purple-600">
+                <button onClick={() => sendTextMessage(textMessage, user, currentChat._id, setTextMessage)} className="bg-violet-500 text-white p-3 rounded-full hover:bg-violet-600">
                     <FontAwesomeIcon icon={faPaperPlane} className="text-xl" />
                 </button>
             </div>

@@ -67,13 +67,13 @@ const Chat = () => {
         className={`w-full lg:w-1/3 lg:my-8 lg:ml-10 lg:mr-4 min-w-[300px] flex flex-col transition-transform duration-300 ${isChatBoxVisible ? "hidden lg:flex" : ""
           }`}
       >
-        <div className={`${isDiscoverChatsVisible ? "hidden" : ""} w-full mx-auto rounded-lg border bg-white h-full flex flex-col`}>
+        <div className={`${isDiscoverChatsVisible ? "hidden" : ""} w-full mx-auto rounded-lg border dark:border-gray-800 bg-white min-h-screen lg:min-h-0 dark:bg-customGray h-full flex flex-col`}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-4">
-            <h1 className="text-lg font-bold text-gray-800">Chats</h1>
+            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-200">Chats</h1>
             <button
               onClick={handleDiscoverToggle}
-              className="px-2 py-1 text-xs font-medium text-gray-900 bg-transparent rounded-md hover:bg-gray-200 border border-gray-400"
+              className="px-2 py-1 text-xs font-medium text-gray-900 dark:text-gray-200 bg-transparent rounded-md hover:bg-gray-200 dark:hover:bg-midGray border border-gray-400 dark:border-gray-800"
             >
               + New
             </button>
@@ -85,7 +85,7 @@ const Chat = () => {
             <input
               type="text"
               placeholder="Chat search..."
-              className="w-full p-3 border bg-transparent text-black border-gray-300 rounded-md text-xs focus:outline-none"
+              className="w-full p-3 border bg-transparent text-black dark:text-gray-200 border-gray-300 dark:border-gray-800 rounded-md text-xs focus:outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

@@ -29,7 +29,7 @@ const Notification = () => {
             {/* Bell Icon with Notification Badge */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-gray-600 hover:text-gray-800 transition duration-200"
+                className="relative p-2"
             >
                 <FontAwesomeIcon icon={faBell} className="text-xl" />
                 {unreadNotifications.length > 0 && (
@@ -41,11 +41,14 @@ const Notification = () => {
 
             {/* Dropdown Notification Panel */}
             {isOpen && (
-                <div className="absolute left-10 top-0 w-80 bg-white shadow-lg rounded-lg border border-gray-200 overflow-hidden z-50">
+                <div className="absolute left-12 top-0 w-80 bg-white dark:bg-customGray shadow-lg rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden z-50">
                     {/* Header */}
-                    <div className="flex justify-between items-center px-4 py-3 border-b">
-                        <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-                        <button className="text-sm text-blue-500 hover:underline" onClick={() => markAllNotificationsRead(notifications)}>
+                    <div className="flex justify-between items-center px-4 py-3 border-b dark:border-gray-800">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Notifications</h3>
+                        <button className="text-sm text-blue-500 hover:underline" onClick={() => {
+                            markAllNotificationsRead(notifications)
+                            setIsOpen(false)
+                        }}>
                             Mark all as read
                         </button>
                     </div>
@@ -58,17 +61,17 @@ const Notification = () => {
                             modifiedNotifications.map((n, index) => (
                                 <div
                                     key={index}
-                                    className={`px-4 py-3 flex flex-col border-b ${n.isRead ? "bg-white" : "bg-violet-100"
+                                    className={`px-4 py-3 flex flex-col border-b dark:border-gray-800 ${n.isRead ? "bg-white dark:bg-midGray" : "bg-violet-100 dark:bg-violet-600"
                                         } hover:bg-gray-50 transition`}
-                                        onClick={() => {
-                                            markNotificationAsRead(n, userChats, user);
-                                            setIsOpen(false);
-                                        }}
+                                    onClick={() => {
+                                        markNotificationAsRead(n, userChats, user);
+                                        setIsOpen(false);
+                                    }}
                                 >
-                                    <span className="text-sm text-gray-800 font-medium">
+                                    <span className="text-sm text-gray-800 dark:text-gray-300 font-medium">
                                         {n.senderName} sent you a new message
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className={`text-xs ${n.isRead ? "text-gray-500" : "text-gray-500 dark:text-gray-300"} `}>
                                         {moment(n.date).calendar()}
                                     </span>
                                 </div>

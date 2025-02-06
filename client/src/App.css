@@ -6,16 +6,18 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
   color: rgba(0, 0, 0, 0.87);
-  /* background-color: #242424; */
   background-color: #F5F5F4;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark {
+  /* background-color: #242424 !important; */
+  background-color: #121212 !important;
+  color: white !important;
 }
 
 .scrollbar-hide {
@@ -26,4 +28,17 @@
   display: none; /* Safari and Chrome */
 }
 
+/* react-input-emoji */
+.dark .react-input-emoji--container {
+  background: #282828 !important; 
+  color: #e5e7eb !important;
+  border-color: #35393e8d !important;
+}
 
+.dark .react-input-emoji--input  {
+  color: #e5e7eb !important;
+}
+
+.dark .react-input-emoji--placeholder  {
+  color: #e5e7eb53 !important;
+}
