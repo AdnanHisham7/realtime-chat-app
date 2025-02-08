@@ -1,8 +1,10 @@
-// Settings.jsx
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPalette, faCookieBite, faVolumeUp, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "../context/ThemeContext";
+import axios from "axios";
+import { baseUrl } from "../utils/services";
+import { toast } from "sonner";
 
 const colorPalette = [
     { name: 'Violet', value: '#6366f1' },
@@ -20,18 +22,78 @@ const colorPalette = [
 
 const tabIcons = {
     appearance: faPalette,
-    cookies: faCookieBite,
+    chats: faCookieBite,
     sounds: faVolumeUp,
     "privacy-policy": faShieldAlt,
 };
 
-
 const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, handleApplyColor, activeTab, setActiveTab }) => {
     const { toggleDarkMode, darkMode } = useTheme();
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteType, setDeleteType] = useState(''); // 'messages' or 'chats'
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteConfirmation = (type) => {
+        setDeleteType(type);
+        setShowDeleteConfirmation(true);
+    };
+
+    const performDeletion = async () => {
+        setIsDeleting(true);
+        try {
+            const token = JSON.parse(localStorage.getItem('user')).token;
+            const endpoint = deleteType === 'messages' ? 'messages/delete-all' : 'chats/delete-all';
+            
+            const response = await axios.delete(`${baseUrl}/${endpoint}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            toast.success(response.data.message);
+            setTimeout(() => {
+                window.location.reload()
+            }, 1000)
+        } catch (error) {
+            toast.error(`Failed to delete ${deleteType}: ` + (error.response?.data?.message || error.message));
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteConfirmation(false);
+        }
+    };
+
 
     return (
         showModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteConfirmation && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white dark:bg-customGray rounded-lg p-6 shadow-lg text-start">
+                            <h2 className=" text-gray-800 dark:text-gray-200 mb-4">
+                                Are you sure you want to delete all {deleteType}?
+                                <br />
+                                This cannot be undone!
+                            </h2>
+                            <div className="flex justify-end space-x-2 text-sm">
+                                <button
+                                    onClick={() => setShowDeleteConfirmation(false)}
+                                    className="px-4 py-2 bg-gray-300 dark:bg-lightGray text-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-400 transition"
+                                    disabled={isDeleting}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={performDeletion}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? 'Deleting...' : 'Confirm'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="bg-white dark:bg-customGray rounded-lg p-6 w-[600px] h-[400px] flex relative">
                     {/* Close Button */}
                     <button
@@ -43,7 +105,7 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
 
                     {/* Left Tabs */}
                     <div className="flex flex-col w-1/3 border-r dark:border-gray-800 pr-4">
-                        {["appearance", "cookies", "sounds", "privacy-policy"].map((tab) => (
+                        {["appearance", "chats", "sounds", "privacy-policy"].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -103,6 +165,34 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
                                         Apply Color
                                     </button>
 
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Chat Settings Content */}
+                        {activeTab === 'chats' && (
+                            <div className="space-y-6">
+                                <div>
+                                    <button
+                                        onClick={() => handleDeleteConfirmation('messages')}
+                                        className="bg-red-600 text-sm text-white py-2 px-6 rounded hover:bg-red-700 transition-colors"
+                                    >
+                                        Delete all messages
+                                    </button>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        Delete all messages from all chats
+                                    </p>
+                                </div>
+                                <div>
+                                    <button
+                                        onClick={() => handleDeleteConfirmation('chats')}
+                                        className="bg-red-600 text-sm text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
+                                    >
+                                        Delete all chats
+                                    </button>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        Delete all messages and clear the chats from history
+                                    </p>
                                 </div>
                             </div>
                         )}

@@ -1,4 +1,5 @@
 const Chat = require("../models/Chat");
+const Message = require("../models/Message")
 
 //! Create a new chat or return an existing one
 const createChat = async (req, res) => {
@@ -80,8 +81,27 @@ const getChat = async (req, res) => {
   }
 };
 
+const deleteAllChats = async (req, res) => {
+  try {
+      const userId = req.user.id; 
+
+      const userChats = await Chat.find({ members: userId });
+      const chatIds = userChats.map(chat => chat._id);
+
+      await Message.deleteMany({ chatId: { $in: chatIds } });
+      await Chat.deleteMany({ _id: { $in: chatIds } });
+
+      res.status(200).json({ message: "All chats and messages deleted successfully" });
+  } catch (error) {
+      console.error("Error deleting chats:", error);
+      res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   createChat,
   getUserChats,
   getChat,
+  deleteAllChats
 };
