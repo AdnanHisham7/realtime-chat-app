@@ -196,6 +196,68 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
                                 </div>
                             </div>
                         )}
+
+                        {activeTab === 'privacy-policy' && (
+                            <div className="h-full overflow-y-auto scrollbar-hide pr-2">
+                                <h2 className="text-lg font-semibold mb-4 dark:text-gray-200">Privacy Policy</h2>
+                                <div className="text-xs space-y-4 dark:text-gray-300">
+                                    <div>
+                                        <h3 className="font-medium mb-2">1. Data Collection</h3>
+                                        <p className="text-gray-600 dark:text-gray-400">
+                                            We collect the following information to provide our services:
+                                        </p>
+                                        <ul className="list-disc pl-6 mt-1 space-y-1">
+                                            <li>Account information (name, email, profile picture)</li>
+                                            <li>Message content and chat history</li>
+                                            <li>Device information for connection management</li>
+                                            <li>User preferences (theme, color choices)</li>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="font-medium mb-2">2. Data Usage</h3>
+                                        <p className="text-gray-600 dark:text-gray-400">
+                                            Your data is used to:
+                                        </p>
+                                        <ul className="list-disc pl-6 mt-1 space-y-1">
+                                            <li>Enable real-time messaging through WebSocket connections</li>
+                                            <li>Personalize appearance settings (dark mode, colors)</li>
+                                            <li>Maintain chat history and synchronization across devices</li>
+                                            <li>Provide account security and authentication</li>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="font-medium mb-2">3. Data Storage</h3>
+                                        <p className="text-gray-600 dark:text-gray-400">
+                                            All user data is:
+                                        </p>
+                                        <ul className="list-disc pl-6 mt-1 space-y-1">
+                                            <li>Encrypted in transit using secure protocols</li>
+                                            <li>Stored on secured servers with access controls</li>
+                                            <li>Retained until account deletion via settings</li>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="font-medium mb-2">4. User Controls</h3>
+                                        <p className="text-gray-600 dark:text-gray-400">
+                                            You can:
+                                        </p>
+                                        <ul className="list-disc pl-6 mt-1 space-y-1">
+                                            <li>Delete individual messages or entire chats</li>
+                                            <li>Update profile information through account settings</li>
+                                            <li>Export chat history (contact support)</li>
+                                            <li>Manage notification preferences</li>
+                                        </ul>
+                                    </div>
+
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                                        Last updated: 24/2/2025
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
