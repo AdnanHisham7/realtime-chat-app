@@ -222,5 +222,20 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+//! Update ringtone preference
+const updateRingtone = async (req, res) => {
+  try {
+    const { ringtone } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { ringtone },
+      { new: true }
+    ).select('-password');
 
-module.exports = { registerUser, loginUser, findUser, getUsers, updateUser, changePassword, uploadProfileImage, getUserProfile };
+    res.json({ message: "Ringtone updated successfully", user });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, findUser, getUsers, updateUser, changePassword, uploadProfileImage, getUserProfile, updateRingtone };

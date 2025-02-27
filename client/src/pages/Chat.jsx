@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Link } from 'react-router-dom'
 import { AuthContext } from '../context/AuthContext'
@@ -8,17 +8,177 @@ import Sidebar from '../components/Sidebar'
 import UserChat from '../components/UserChat'
 import DiscoverChats from '../components/DiscoverChats'
 import ChatBox from '../components/ChatBox'
-import { faArrowLeft, faComments, faGear, faUserGroup } from '@fortawesome/free-solid-svg-icons'
+import { faComments, faGear, faUserGroup, faUserCircle } from '@fortawesome/free-solid-svg-icons'
 import { useFetchAllUsers } from '../hooks/useFetchAllUsers'
+import { baseUrl } from '../utils/services'
+import useFetchUserProfile from '../hooks/useFetchUserProfile'
+import { useFetchRecipientUser } from '../hooks/useFetchRecipient'
 
 const Chat = () => {
-  const { user, logoutUser } = useContext(AuthContext);
-  const { userChats, isUserChatsLoading, updateCurrentChat } = useContext(ChatContext);
+  const { user } = useContext(AuthContext);
+  const {
+    userChats,
+    currentChat,
+    updateCurrentChat,
+    call,
+    answerCall,
+    endCall,
+    localStream,
+    remoteStream,
+    isCallActive,
+  } = useContext(ChatContext);
+  const { recipientUser } = useFetchRecipientUser(currentChat, user);
+  const { userProfile } = useFetchUserProfile();
 
   const { allUsers, loading: allUsersLoading } = useFetchAllUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [isChatBoxVisible, setChatBoxVisible] = useState(false);
   const [isDiscoverChatsVisible, setDiscoverChatsVisible] = useState(false); // New state
+
+  // WebRTC related
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const audioRef = useRef(null);
+  const [volume, setVolume] = useState(0);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const ringtoneRef = useRef(null);
+  const [isRingtoneLoaded, setIsRingtoneLoaded] = useState(false);
+  const [isUserInteracted, setIsUserInteracted] = useState(false);
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+  useEffect(() => {
+    if (audioRef.current && remoteStream) {
+      // Clone the stream to avoid reference issues
+      const audioStream = new MediaStream(remoteStream.getAudioTracks());
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch(console.error);
+    }
+  }, [remoteStream, call]);
+
+  const setupAudioAnalyzer = useCallback(() => {
+    if (!remoteStream) return;
+    const audioStream = new MediaStream(remoteStream.getAudioTracks());
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) {
+      console.error("AudioContext is not supported in this browser.");
+      return;
+    }
+
+    const audioContext = new AudioContext();
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyserRef.current = analyser;
+
+    const source = audioContext.createMediaStreamSource(audioStream);
+    source.connect(analyser);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    const updateVolume = () => {
+      analyser.getByteFrequencyData(dataArray);
+      let sum = dataArray.reduce((a, b) => a + b, 0);
+      let avg = sum / bufferLength;
+      setVolume(avg / 255);
+      animationFrameRef.current = requestAnimationFrame(updateVolume);
+    };
+    updateVolume();
+    console.log('hi', volume * 120)
+  }, [remoteStream, call?.type]);
+
+  useEffect(() => {
+    let audioContext;
+    const setup = async () => {
+      if (remoteStream && call.type !== 'video') {
+        audioContext = await setupAudioAnalyzer();
+      }
+    };
+    setup();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContext) {
+        audioContext.close();
+      }
+    };
+  }, [call?.type, remoteStream, setupAudioAnalyzer]);
+
+  // Detect first user interaction (click/touch) and enable ringtone
+  useEffect(() => {
+    const enableAudio = () => setIsUserInteracted(true);
+
+    document.addEventListener("click", enableAudio, { once: true });
+    document.addEventListener("touchstart", enableAudio, { once: true });
+
+    return () => {
+      document.removeEventListener("click", enableAudio);
+      document.removeEventListener("touchstart", enableAudio);
+    };
+  }, []);
+
+  useEffect(() => {
+    const ringtone = ringtoneRef.current;
+    if (!ringtone || !userProfile?.ringtone) return;
+  
+    const handleCanPlay = () => {
+      setIsRingtoneLoaded(true);
+    };
+  
+    ringtone.src = userProfile.ringtone;
+    ringtone.load();
+    ringtone.addEventListener('canplaythrough', handleCanPlay);
+  
+    return () => {
+      ringtone.removeEventListener('canplaythrough', handleCanPlay);
+      setIsRingtoneLoaded(false);
+    };
+  }, [userProfile?.ringtone]);
+  
+
+  // play effect to handle loading retries
+  useEffect(() => {
+    if (call?.isReceivingCall && isUserInteracted) {
+      const playWithRetry = () => {
+        ringtoneRef.current.play()
+          .catch(err => {
+            console.error('Play failed, retrying...', err);
+            setTimeout(playWithRetry, 500);
+          });
+      };
+      
+      playWithRetry();
+    } else {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
+  }, [call?.isReceivingCall, isUserInteracted]);
+
+  // Preload the new ringtone
+  useEffect(() => {
+    if (ringtoneRef.current && userProfile?.ringtone) {
+      ringtoneRef.current.src = userProfile.ringtone;
+      ringtoneRef.current.load();
+    }
+  }, [userProfile?.ringtone]);
+
+  // memoized caller
+  const caller = React.useMemo(() =>
+    call?.fromId ? allUsers.find(u => u._id === call.fromId) : null,
+    [call?.fromId, allUsers]
+  );
 
   const handleChatClick = (chat) => {
     updateCurrentChat(chat);
@@ -33,17 +193,229 @@ const Chat = () => {
     setDiscoverChatsVisible(!isDiscoverChatsVisible); // Toggle DiscoverChats visibility
   };
 
-  const filteredChats = userChats?.filter(chat => {
-    if (!user || allUsersLoading) return false;
-    const recipientId = chat.members.find(id => id !== user.id);
-    const recipient = allUsers.find(u => u._id === recipientId);
-    return recipient?.name.toLowerCase().includes(searchQuery.toLowerCase());
-  }) || [];
-
-  console.log("filtered chats", filteredChats)
+  // Add memoization for filtered chats
+  const filteredChats = React.useMemo(() =>
+    userChats?.filter(chat => {
+      if (!user || allUsersLoading) return false;
+      const recipientId = chat.members.find(id => id !== user.id);
+      const recipient = allUsers.find(u => u._id === recipientId);
+      return recipient?.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }) || [],
+    [userChats, user, allUsers, allUsersLoading, searchQuery]
+  );
 
   return (
     <div className="flex flex-col lg:flex-row h-screen">
+
+      {/* Call initializing Interface */}
+      {call && !isCallActive && !call?.isReceivingCall && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-midGray p-6 rounded-lg text-center">
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">
+              {call.type === 'video' ? "Calling..." : "Dialing..."}
+            </h2>
+            {call.type === 'video' && localStream && (
+              <video
+                ref={localVideoRef}
+                autoPlay
+                muted
+                className="w-32 h-32 object-cover rounded-lg mx-auto"
+              />
+            )}
+            {call.type === 'audio' && (
+              <div className="w-32 h-32 flex flex-col items-center justify-center bg-transparent rounded-lg mx-auto">
+                {userProfile?.profileImage ? (
+                  <img
+                    src={`${baseUrl}${userProfile.profileImage}`}
+                    alt="Your profile"
+                    className="w-28 h-28 rounded-full object-cover"
+                  />
+                ) : (
+                  <FontAwesomeIcon
+                    icon={faUserCircle}
+                    className="w-20 h-20 text-gray-400"
+                  />
+                )}
+              </div>
+            )}
+            <div className="flex justify-center mt-4 gap-4">
+              <button
+                onClick={endCall}
+                className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600"
+              >
+                Cancel Call
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ringtone Audio Element */}
+      <audio
+        ref={ringtoneRef}
+        src={userProfile?.ringtone || '/ringtones/ringtone1.mp3'}
+        loop
+      ></audio>
+
+      {/* Incoming Call UI */}
+      {call?.isReceivingCall && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-midGray p-6 rounded-lg text-center">
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">
+              Incoming {call.type} call from {call?.name || "unknown"}
+            </h2>
+
+            {call.type === "video" ? (
+              <div className="w-64 h-48 bg-gray-200 rounded-lg mx-auto mb-4">
+                {/* Placeholder for video preview */}
+              </div>
+            ) : (
+              <div className="w-32 h-32 flex items-center justify-center bg-gray-200 rounded-full mx-auto mb-4">
+                {caller?.profileImage ? (
+                  <img
+                    src={`${baseUrl}${caller.profileImage}`}
+                    alt="Caller"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <FontAwesomeIcon
+                    icon={faUserCircle}
+                    className="w-20 h-20 text-gray-400"
+                  />
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  endCall();
+                  ringtoneRef.current.pause();
+                  ringtoneRef.current.currentTime = 0;
+                }}
+                className="bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600"
+              >
+                Decline
+              </button>
+              <button
+                onClick={() => {
+                  answerCall();
+                  ringtoneRef.current.pause();
+                  ringtoneRef.current.currentTime = 0;
+                }}
+                className="bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600"
+              >
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Active Call Interface*/}
+      {isCallActive && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-midGray p-4 rounded-lg w-full max-w-4xl">
+            <div className="grid grid-cols-2 gap-4 h-[70vh]">
+              {call.type === 'video' ? (
+                <>
+                  {/* Local Video */}
+                  <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+                    {localStream && (
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        muted
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute bottom-2 left-2 text-white text-sm">
+                      You
+                    </div>
+                  </div>
+
+                  {/* Remote Video */}
+                  <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+                    {remoteStream && (
+                      <video
+                        ref={remoteVideoRef}
+                        autoPlay
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute bottom-2 left-2 text-white text-sm">
+                      {call?.name || 'Participant'}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Local User Icon */}
+                  <div className="relative flex flex-col items-center justify-center rounded-md border border-gray-600">
+                    {userProfile?.profileImage ? (
+                      <img
+                        src={`${baseUrl}${userProfile.profileImage}`}
+                        alt="Your profile"
+                        className="w-32 h-32 rounded-full object-cover"
+                      />
+                    ) : (
+                      <FontAwesomeIcon
+                        icon={faUserCircle}
+                        className="w-32 h-32 text-gray-400"
+                      />
+                    )}
+                    <div className="text-white text-sm mt-2">You</div>
+                  </div>
+
+                  {/* Remote User Icon */}
+                  <div className="relative flex flex-col items-center justify-center rounded-md border border-primary overflow-hidden"
+                    style={{
+                      backgroundColor: `rgba(211, 211, 211, ${volume * 2})`, // Light gray with dynamic opacity
+                      transition: 'background-color 0.1s linear' // Faster and real-time response
+                    }}
+                  >
+                    {(recipientUser?.profileImage || caller?.profileImage) ? (
+                      <img
+                        src={`${baseUrl}${(user?.name == call?.name ? recipientUser?.profileImage : caller?.profileImage)}`}
+                        alt="Caller"
+                        className="w-32 h-32 rounded-full object-cover relative z-10"
+                      />
+                    ) : (
+                      <FontAwesomeIcon
+                        icon={faUserCircle}
+                        className="w-32 h-32 text-red-400 relative z-10"
+                      />
+                    )}
+                    <div className="text-white text-sm mt-2">
+                      {(user?.name == call?.name ? recipientUser?.name : call?.name) || 'Participant'}
+                    </div>
+
+                    {/* Audio Element for Non-Video Call */}
+                    {remoteStream && (
+                      <>
+                        <audio ref={audioRef} autoPlay />
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+            </div>
+
+            <div className="flex justify-center mt-4 gap-4">
+              <button
+                onClick={endCall}
+                className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600"
+              >
+                End Call
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Sidebar */}
       <Sidebar className="hidden lg:block" />
 

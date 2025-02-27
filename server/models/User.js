@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     profileImage: { type: String, default: "" },
+    ringtone: { type: String, default: "/ringtones/ringtone1.mp3" },
   },
   { timestamps: true }
 );

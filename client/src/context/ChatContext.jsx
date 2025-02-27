@@ -1,7 +1,7 @@
 import axios from "axios";
 import { toast } from "sonner";
 import { baseUrl } from "../utils/services";
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { faBullseye } from "@fortawesome/free-solid-svg-icons";
 import { io } from "socket.io-client"
 
@@ -11,29 +11,51 @@ export const ChatContext = createContext()
 export const ChatProvider = ({ children, user }) => {
     const [userChats, setUserChats] = useState(null)
     const [isUserChatsLoading, setIsUserChatsLoading] = useState(false)
-
     const [allUsers, setAllUsers] = useState([])
     const [discoverChats, setDiscoverChats] = useState([])
     const [currentChat, setCurrentChat] = useState(null)
-
     const [messages, setMessages] = useState([])
     const [isMessagesLoading, setIsMessagesLoading] = useState(false)
-
     const [newMessage, setNewMessage] = useState(null)
-
-    const [socket, setSocket] = useState(null)
     const [onlineUsers, setOnlineUsers] = useState([])
     const [notifications, setNotifications] = useState([])
+
+    // WebRTC-related states
+    const [call, setCall] = useState(null);
+    const [localStream, setLocalStream] = useState(null);
+    const [remoteStream, setRemoteStream] = useState(null);
+    const [isCallActive, setIsCallActive] = useState(false);
+    const peerConnection = useRef(null);
+    const [socket, setSocket] = useState(null);
 
     // initializing socket
     useEffect(() => {
         if (!user?.id) return;
 
-        const newSocket = io('http://localhost:3000/');
+        const newSocket = io("http://localhost:3000", {
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+        });
+
+        newSocket.on("connect", () => {
+            console.log("Socket connected:", newSocket.connected);
+            newSocket.emit("addNewUser", user.id);
+        });
+
+        newSocket.on("connect_error", (error) => {
+            console.error("Socket connection error:", error);
+        });
+
+        newSocket.on("disconnect", (reason) => {
+            console.log("Socket disconnected:", reason);
+        });
+
         setSocket(newSocket);
 
         return () => {
-            newSocket.disconnect(); // Cleanup socket on unmount
+            newSocket.disconnect();
+            setSocket(null);
         };
     }, [user]);
 
@@ -260,8 +282,157 @@ export const ChatProvider = ({ children, user }) => {
         );
     }, []);
 
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleCallIncoming = (data) => {
+            console.log(data, "call data")
+            setCall({
+                isReceivingCall: true,
+                from: data.from,
+                fromId: data.fromId,
+                name: data.name,
+                type: data.type,
+                signal: data.signal
+            });
+        };
+
+        const handleCallAccepted = (signal) => {
+            setIsCallActive(true);
+            peerConnection.current.setRemoteDescription(new RTCSessionDescription(signal));
+        };
+
+        const handleCallEnded = () => endCall();
+        const handleICECandidate = (data) => {
+            const candidate = new RTCIceCandidate(data.candidate);
+            peerConnection.current?.addIceCandidate(candidate);
+        };
+
+        socket.on("callIncoming", handleCallIncoming);
+        socket.on("callAccepted", handleCallAccepted);
+        socket.on("callEnded", handleCallEnded);
+        socket.on("ICEcandidate", handleICECandidate);
+
+        return () => {
+            socket.off("callIncoming", handleCallIncoming);
+            socket.off("callAccepted", handleCallAccepted);
+            socket.off("callEnded", handleCallEnded);
+            socket.off("ICEcandidate", handleICECandidate);
+        };
+    }, [socket]);
+
+    const createPeerConnection = (stream) => {
+        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        peerConnection.current = new RTCPeerConnection(config);
+
+        // Add local tracks
+        stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+
+        // Handle remote tracks
+        peerConnection.current.ontrack = (event) => {
+            setRemoteStream(prev => {
+                // Create new stream if none exists
+                if (!prev) {
+                    const newStream = new MediaStream();
+                    event.streams[0].getTracks().forEach(track => newStream.addTrack(track));
+                    return newStream;
+                }
+                // Add new tracks to existing stream
+                event.streams[0].getTracks().forEach(track => {
+                    if (!prev.getTracks().some(t => t.id === track.id)) {
+                        prev.addTrack(track);
+                    }
+                });
+                return prev;
+            });
+        };
+
+        // Handle ICE candidates
+        peerConnection.current.onicecandidate = (event) => {
+            if (event.candidate && socket) {
+                const targetSocket = call?.from || call?.target;
+                targetSocket && socket.emit("ICEcandidate", {
+                    target: targetSocket,
+                    candidate: event.candidate,
+                    sender: socket.id
+                });
+            }
+        };
+    };
+
+    const startCall = async (isVideo, targetSocket) => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
+            setLocalStream(stream);
+            createPeerConnection(stream);
+
+            const offer = await peerConnection.current.createOffer();
+            await peerConnection.current.setLocalDescription(offer);
+            console.log(targetSocket, "targetS")
+            socket.emit("callUser", {
+                userToCall: targetSocket,
+                signalData: offer,
+                from: socket.id,
+                fromId: user.id,
+                name: user.name,
+                type: isVideo ? 'video' : 'audio'
+            });
+        } catch (error) {
+            console.error('Error starting call:', error);
+        }
+    };
+
+    const answerCall = async () => {
+        try {
+            let stream = localStream;
+
+            // Only request new media if we don't have a stream or need different type
+            if (!stream || (call.type === 'video' && !stream.getVideoTracks().length)) {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: call.type === 'video',
+                    audio: true
+                });
+                setLocalStream(stream);
+            }
+
+            createPeerConnection(stream);
+            await peerConnection.current.setRemoteDescription(
+                new RTCSessionDescription(call.signal)
+            );
+            const answer = await peerConnection.current.createAnswer();
+            await peerConnection.current.setLocalDescription(answer);
+
+            socket.emit("answerCall", {
+                signal: answer,
+                to: call.from
+            });
+            setIsCallActive(true);
+            setCall(prev => ({ ...prev, isReceivingCall: false }));
+        } catch (error) {
+            console.error('Error answering call:', error);
+            endCall(); // Clean up on error
+        }
+    };
+
+    const endCall = () => {
+        if (peerConnection.current) {
+            peerConnection.current.ontrack = null; // Remove track handler
+            peerConnection.current.close();
+        }
+        peerConnection.current = null;
+        localStream?.getTracks().forEach(track => track.stop());
+        remoteStream?.getTracks().forEach(track => track.stop());
+        setLocalStream(null);
+        setRemoteStream(null);
+        setIsCallActive(false);
+        setCall(null);
+        socket?.emit("endCall", { to: call?.from || call?.target });
+    };
+
+
     return (
         <ChatContext.Provider value={{
+            // Chat
             userChats,
             isUserChatsLoading,
             discoverChats,
@@ -276,7 +447,16 @@ export const ChatProvider = ({ children, user }) => {
             allUsers,
             markAllNotificationsRead,
             markNotificationAsRead,
-            markThisUserNotificationsAsRead
+            markThisUserNotificationsAsRead,
+            // WebRTC
+            call,
+            localStream,
+            remoteStream,
+            isCallActive,
+            startCall,
+            answerCall,
+            endCall,
+            setCall
         }}>
             {children}
         </ChatContext.Provider>

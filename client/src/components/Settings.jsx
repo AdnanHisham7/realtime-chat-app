@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPalette, faCookieBite, faVolumeUp, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faPalette, faCookieBite, faVolumeUp, faVolumeMute, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "../context/ThemeContext";
 import axios from "axios";
 import { baseUrl } from "../utils/services";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const colorPalette = [
     { name: 'Violet', value: '#6366f1' },
@@ -32,6 +33,13 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [deleteType, setDeleteType] = useState(''); // 'messages' or 'chats'
     const [isDeleting, setIsDeleting] = useState(false);
+    const [ringtones, setRingtones] = useState([
+        { name: "Ringtone 1", path: "/ringtones/ringtone1.mp3" },
+        { name: "Ringtone 2", path: "/ringtones/ringtone2.mp3" },
+        { name: "Ringtone 3", path: "/ringtones/ringtone3.mp3" },
+    ]);
+    const [selectedRingtone, setSelectedRingtone] = useState("");
+    const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
 
     const handleDeleteConfirmation = (type) => {
         setDeleteType(type);
@@ -43,15 +51,12 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
         try {
             const token = JSON.parse(localStorage.getItem('user')).token;
             const endpoint = deleteType === 'messages' ? 'messages/delete-all' : 'chats/delete-all';
-            
+
             const response = await axios.delete(`${baseUrl}/${endpoint}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             toast.success(response.data.message);
-            setTimeout(() => {
-                window.location.reload()
-            }, 1000)
         } catch (error) {
             toast.error(`Failed to delete ${deleteType}: ` + (error.response?.data?.message || error.message));
         } finally {
@@ -59,6 +64,65 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
             setShowDeleteConfirmation(false);
         }
     };
+
+    // Fetch user's current ringtone preference
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const token = JSON.parse(localStorage.getItem("user")).token;
+                console.log(token, "token")
+                const response = await axios.get(`${baseUrl}/users/profile`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setSelectedRingtone(response.data.ringtone);
+            } catch (error) {
+                toast.error("Failed to fetch ringtone preference: " + error.message);
+            }
+        };
+
+        if (showModal && activeTab === "sounds") {
+            fetchUserProfile();
+        }
+    }, [showModal, activeTab]);
+
+    // Handle ringtone change
+    const handleRingtoneChange = async (ringtonePath) => {
+        try {
+            const token = JSON.parse(localStorage.getItem("user")).token;
+            const response = await axios.put(
+                `${baseUrl}/users/ringtone`,
+                { ringtone: ringtonePath },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSelectedRingtone(ringtonePath);
+            toast.success(response.data.message);
+            setTimeout(() => {
+                window.location.reload()
+            }, 1000)
+        } catch (error) {
+            toast.error("Failed to update ringtone: " + error.message);
+        }
+    };
+
+    const handlePlayPause = (ringtonePath) => {
+        const audioElement = document.getElementById(`ringtone-${ringtonePath.replace(/\W/g, '-')}`);
+
+        if (currentlyPlaying && currentlyPlaying !== audioElement) {
+            // Stop the previously playing ringtone
+            currentlyPlaying.pause();
+            currentlyPlaying.currentTime = 0;
+        }
+
+        if (audioElement.paused) {
+            audioElement.play();
+            setCurrentlyPlaying(audioElement);
+        } else {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+            setCurrentlyPlaying(null);
+        }
+    };
+
 
 
     return (
@@ -258,6 +322,60 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
                                 </div>
                             </div>
                         )}
+
+                        {activeTab === "sounds" && (
+                            <div className="h-full overflow-y-auto scrollbar-hide pr-2">
+                                <h2 className="text-lg font-semibold mb-4 dark:text-gray-200">Ringtones</h2>
+                                <div className="space-y-2">
+                                    {ringtones.map((ringtone, index) => {
+                                        const isPlaying = currentlyPlaying?.src?.endsWith(ringtone.path);
+                                        const isSelected = selectedRingtone === ringtone.path; // Check if the ringtone is selected
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`flex items-center justify-between py-1 px-3 rounded-lg cursor-pointer text-sm transition-all duration-300 
+                                                    ${isSelected 
+                                                      ? "bg-gray-200 dark:bg-midGray dark:text-white" 
+                                                      : "hover:bg-gray-100 dark:hover:bg-midGray"
+                                                    }`}
+                                                  
+                                                onClick={() => {
+                                                    setSelectedRingtone(ringtone.path); // Update selected ringtone on row click
+                                                }}
+                                            >
+                                                <span>{ringtone.name}</span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent row click
+                                                        handlePlayPause(ringtone.path);
+                                                    }}
+                                                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                                                >
+                                                    <FontAwesomeIcon
+                                                        icon={isPlaying ? faVolumeUp : faVolumeMute}
+                                                        className={isPlaying ? "text-green-500" : isSelected ? "dark:text-white" : "text-gray-500"}
+                                                    />
+                                                </button>
+                                                <audio
+                                                    id={`ringtone-${ringtone.path.replace(/\W/g, '-')}`}
+                                                    src={ringtone.path}
+                                                    onEnded={() => setCurrentlyPlaying(null)}
+                                                    hidden
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <button
+                                    onClick={() => handleRingtoneChange(selectedRingtone)}
+                                    className="mt-6 bg-transparent border border-primary text-xs dark:text-white px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-950 transition-colors duration-200"
+                                >
+                                    Save Ringtone
+                                </button>
+                            </div>
+                        )}
+
+
                     </div>
                 </div>
             </div>
