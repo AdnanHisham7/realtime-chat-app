@@ -22,6 +22,7 @@ const ChatBox = ({ handleBackToChats }) => {
     sendTextMessage,
     onlineUsers,
     setCall,
+    socket,
     startCall
   } = useContext(ChatContext);
   const { recipientUser } = useFetchRecipientUser(currentChat, user);
@@ -60,12 +61,20 @@ const ChatBox = ({ handleBackToChats }) => {
   }, [messages]);
 
   // Trigger Video call
-  const handleVideoCall = () => {
-    const recipientSocket = onlineUsers.find(
-      user => user.userId === recipientUser?._id
-    )?.socketId;
+const handleVideoCall = () => {
+  // Check if recipient exists and is online
+  if (!recipientUser) {
+    toast.error("Recipient not found");
+    return;
+  }
 
-    if (recipientSocket) {
+  // Find recipient's socket ID
+  const recipientSocket = onlineUsers.find(
+    user => user.userId === recipientUser._id
+  )?.socketId;
+
+  if (recipientSocket) {
+    try {
       startCall(true, recipientSocket);
       setCall({
         isReceivingCall: false,
@@ -73,14 +82,19 @@ const ChatBox = ({ handleBackToChats }) => {
         type: 'video',
         name: user.name, //(current user's)
         fromId: user.id,
-        from: recipientSocket
+        from: socket.id, // Use current user's socket ID here
+        signal: null
       });
-    } else {
-      toast.warning(`${recipientUser?.name} is not online`)
+    } catch (error) {
+      console.error("Error starting video call:", error);
+      toast.error("Failed to start video call");
     }
-  };
+  } else {
+    toast.warning(`${recipientUser.name} is not online`);
+  }
+};
 
-  // Trigger Video call
+  // Trigger Voice call
   const handleVoiceCall = () => {
     const recipientSocket = onlineUsers.find(
       user => user.userId === recipientUser?._id

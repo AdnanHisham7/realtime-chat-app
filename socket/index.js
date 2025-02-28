@@ -39,7 +39,6 @@ io.on("connection", (socket) => {
 
   socket.on("callUser", (data) => {
     // Verify data contains correct target socket ID
-    console.log(data, "kikiki");
     io.to(data.userToCall).emit("callIncoming", {
       signal: data.signalData,
       from: data.from,
@@ -58,14 +57,21 @@ io.on("connection", (socket) => {
   });
 
   socket.on("ICEcandidate", (data) => {
-    io.to(data.target).emit("ICEcandidate", {
-      candidate: data.candidate,
-      sender: data.sender,
-    });
+    try {
+      // Forward directly using socket ID
+      io.to(data.target).emit("ICEcandidate", {
+        candidate: data.candidate,
+        sender: data.sender,
+      });
+    } catch (error) {
+      console.error("Error handling ICE candidate:", error);
+    }
   });
 
   socket.on("disconnect", () => {
     onlineUsers = onlineUsers.filter((user) => user.socketId != socket.id);
     io.emit("getOnlineUsers", onlineUsers);
+    // Clean up any ongoing calls
+    socket.broadcast.emit("callEnded", { reason: "User disconnected" });
   });
 });

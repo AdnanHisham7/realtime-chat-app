@@ -34,9 +34,12 @@ const Settings = ({ showModal, closeModal, selectedColor, setSelectedColor, hand
     const [deleteType, setDeleteType] = useState(''); // 'messages' or 'chats'
     const [isDeleting, setIsDeleting] = useState(false);
     const [ringtones, setRingtones] = useState([
-        { name: "Ringtone 1", path: "/ringtones/ringtone1.mp3" },
-        { name: "Ringtone 2", path: "/ringtones/ringtone2.mp3" },
-        { name: "Ringtone 3", path: "/ringtones/ringtone3.mp3" },
+        { name: "Reflection", path: "/ringtones/ringtone1.mp3" },
+        { name: "Apple Default", path: "/ringtones/ringtone2.mp3" },
+        { name: "MIUI 8", path: "/ringtones/ringtone3.mp3" },
+        { name: "Sony Ericsson", path: "/ringtones/ringtone4.mp3" },
+        { name: "Standard", path: "/ringtones/ringtone5.mp3" },
+        { name: "FlashScore", path: "/ringtones/ringtone6.mp3" },
     ]);
     const [selectedRingtone, setSelectedRingtone] = useState("");
     const [currentlyPlaying, setCurrentlyPlaying] = useState(null);

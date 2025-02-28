@@ -28,6 +28,23 @@ export const ChatProvider = ({ children, user }) => {
     const peerConnection = useRef(null);
     const [socket, setSocket] = useState(null);
 
+    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
+
+    const toggleVideo = (enable) => {
+        setIsVideoEnabled(enable);
+        localStream?.getVideoTracks().forEach(track => {
+            track.enabled = enable;
+        });
+    };
+
+    const toggleMute = (mute) => {
+        setIsMuted(mute);
+        localStream?.getAudioTracks().forEach(track => {
+            track.enabled = !mute;
+        });
+    };
+
     // initializing socket
     useEffect(() => {
         if (!user?.id) return;
@@ -303,9 +320,15 @@ export const ChatProvider = ({ children, user }) => {
         };
 
         const handleCallEnded = () => endCall();
+        // Update the ICE candidate handler in the socket.io connection
         const handleICECandidate = (data) => {
-            const candidate = new RTCIceCandidate(data.candidate);
-            peerConnection.current?.addIceCandidate(candidate);
+            try {
+                const candidate = new RTCIceCandidate(data.candidate);
+                peerConnection.current?.addIceCandidate(candidate)
+                    .catch(error => console.error('Error adding ICE candidate:', error));
+            } catch (error) {
+                console.error('Error creating ICE candidate:', error);
+            }
         };
 
         socket.on("callIncoming", handleCallIncoming);
@@ -321,40 +344,38 @@ export const ChatProvider = ({ children, user }) => {
         };
     }, [socket]);
 
-    const createPeerConnection = (stream) => {
-        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    // createPeerConnection function
+    const createPeerConnection = (stream, isVideo) => {
+        const config = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' }
+            ]
+        };
+
         peerConnection.current = new RTCPeerConnection(config);
 
         // Add local tracks
-        stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+        stream.getTracks().forEach(track => {
+            peerConnection.current.addTrack(track, stream);
+        });
 
         // Handle remote tracks
         peerConnection.current.ontrack = (event) => {
-            setRemoteStream(prev => {
-                // Create new stream if none exists
-                if (!prev) {
-                    const newStream = new MediaStream();
-                    event.streams[0].getTracks().forEach(track => newStream.addTrack(track));
-                    return newStream;
-                }
-                // Add new tracks to existing stream
-                event.streams[0].getTracks().forEach(track => {
-                    if (!prev.getTracks().some(t => t.id === track.id)) {
-                        prev.addTrack(track);
-                    }
-                });
-                return prev;
+            const newStream = new MediaStream();
+            event.streams[0].getTracks().forEach(track => {
+                newStream.addTrack(track);
             });
+            setRemoteStream(newStream);
         };
 
-        // Handle ICE candidates
+        // ICE Candidate handling
         peerConnection.current.onicecandidate = (event) => {
             if (event.candidate && socket) {
-                const targetSocket = call?.from || call?.target;
-                targetSocket && socket.emit("ICEcandidate", {
-                    target: targetSocket,
-                    candidate: event.candidate,
-                    sender: socket.id
+                const target = call?.from || call?.target;
+                socket.emit("ICEcandidate", {
+                    target: target,
+                    candidate: event.candidate.toJSON(),
+                    sender: user.id
                 });
             }
         };
@@ -362,13 +383,17 @@ export const ChatProvider = ({ children, user }) => {
 
     const startCall = async (isVideo, targetSocket) => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: isVideo ? { facingMode: "user" } : false,
+                audio: true
+            });
+
             setLocalStream(stream);
-            createPeerConnection(stream);
+            createPeerConnection(stream, isVideo);
 
             const offer = await peerConnection.current.createOffer();
             await peerConnection.current.setLocalDescription(offer);
-            console.log(targetSocket, "targetS")
+
             socket.emit("callUser", {
                 userToCall: targetSocket,
                 signalData: offer,
@@ -377,28 +402,37 @@ export const ChatProvider = ({ children, user }) => {
                 name: user.name,
                 type: isVideo ? 'video' : 'audio'
             });
+
+            // Store target socket ID in call state
+            setCall(prev => ({
+                ...prev,
+                target: targetSocket,
+                isReceivingCall: false
+            }));
         } catch (error) {
             console.error('Error starting call:', error);
+            toast.error('Failed to access camera/microphone');
         }
     };
 
     const answerCall = async () => {
         try {
-            let stream = localStream;
+            const constraints = {
+                video: call.type === 'video' ? { facingMode: "user" } : false,
+                audio: true
+            };
 
-            // Only request new media if we don't have a stream or need different type
-            if (!stream || (call.type === 'video' && !stream.getVideoTracks().length)) {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: call.type === 'video',
-                    audio: true
-                });
-                setLocalStream(stream);
-            }
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            setLocalStream(stream);
 
-            createPeerConnection(stream);
+            createPeerConnection(stream, call.type === 'video');
+
+            // Set remote description first
             await peerConnection.current.setRemoteDescription(
                 new RTCSessionDescription(call.signal)
             );
+
+            // Create and set local description
             const answer = await peerConnection.current.createAnswer();
             await peerConnection.current.setLocalDescription(answer);
 
@@ -406,24 +440,34 @@ export const ChatProvider = ({ children, user }) => {
                 signal: answer,
                 to: call.from
             });
+
             setIsCallActive(true);
             setCall(prev => ({ ...prev, isReceivingCall: false }));
         } catch (error) {
             console.error('Error answering call:', error);
-            endCall(); // Clean up on error
+            endCall();
         }
     };
 
     const endCall = () => {
         if (peerConnection.current) {
-            peerConnection.current.ontrack = null; // Remove track handler
+            peerConnection.current.ontrack = null;
             peerConnection.current.close();
+            peerConnection.current = null;
         }
-        peerConnection.current = null;
-        localStream?.getTracks().forEach(track => track.stop());
-        remoteStream?.getTracks().forEach(track => track.stop());
-        setLocalStream(null);
-        setRemoteStream(null);
+
+        // Stop all local tracks
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            setLocalStream(null);
+        }
+
+        // Stop all remote tracks
+        if (remoteStream) {
+            remoteStream.getTracks().forEach(track => track.stop());
+            setRemoteStream(null);
+        }
+
         setIsCallActive(false);
         setCall(null);
         socket?.emit("endCall", { to: call?.from || call?.target });
@@ -456,7 +500,12 @@ export const ChatProvider = ({ children, user }) => {
             startCall,
             answerCall,
             endCall,
-            setCall
+            setCall,
+            toggleMute,
+            toggleVideo,
+            isMuted,
+            isVideoEnabled,
+            socket,
         }}>
             {children}
         </ChatContext.Provider>
