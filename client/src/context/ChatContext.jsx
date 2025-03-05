@@ -49,7 +49,7 @@ export const ChatProvider = ({ children, user }) => {
     useEffect(() => {
         if (!user?.id) return;
 
-        const newSocket = io("http://localhost:3000", {
+        const newSocket = io(baseUrl, {
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,

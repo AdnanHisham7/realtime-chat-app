@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { baseUrl } from '../utils/services';
+import { AuthContext } from '../context/AuthContext';
+
 
 const useFetchUserProfile = () => {
     const [userProfile, setUserProfile] = useState(null);
+    const { logoutUser } = useContext(AuthContext);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -22,7 +25,8 @@ const useFetchUserProfile = () => {
 
                 setUserProfile(response.data);
             } catch (err) {
-                toast.error(err.message || 'Failed to fetch user profile');
+                toast.error("Session expired");
+                logoutUser()
             }
         };
 
